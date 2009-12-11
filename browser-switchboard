@@ -197,7 +197,7 @@ def readconfigfile(signalnum=None, frame=None):
             execfile(os.getenv("HOME", "/home/user") + "/.config/browser-proxy", globals())
         except:
             # No valid config file available
-            return
+            pass
     launcher.UpdateDefaultBrowser()
 
 setconfigdefaults()

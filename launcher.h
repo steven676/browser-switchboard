@@ -25,8 +25,8 @@
 
 #include "browser-switchboard.h"
 
-void launch_microb(struct swb_context * ctx, char * uri);
-void launch_browser(struct swb_context * ctx, char * uri);
-void update_default_browser(struct swb_context * ctx, char * default_browser);
+void launch_microb(struct swb_context *ctx, char *uri);
+void launch_browser(struct swb_context *ctx, char *uri);
+void update_default_browser(struct swb_context *ctx, char *default_browser);
 
 #endif /* _LAUNCHER_H */

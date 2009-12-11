@@ -36,18 +36,18 @@ typedef struct _OssoBrowserClass {
 
 /* The com.nokia.osso_browser D-Bus interface */
 gboolean osso_browser_load_url(OssoBrowser *obj,
-                const char * uri, GError **error);
+                const char *uri, GError **error);
 gboolean osso_browser_mime_open(OssoBrowser *obj,
-                const char * uri, GError **error);
+                const char *uri, GError **error);
 gboolean osso_browser_open_new_window(OssoBrowser *obj,
-                const char * uri, GError **error);
+                const char *uri, GError **error);
 gboolean osso_browser_top_application(OssoBrowser *obj, GError **error);
 /* This is an "undocumented", non-standard extension; DO NOT USE */
 gboolean osso_browser_switchboard_launch_microb(OssoBrowser *obj,
-                const char * uri, GError **error);
+                const char *uri, GError **error);
 
-void dbus_request_osso_browser_name(struct swb_context * ctx);
-void dbus_release_osso_browser_name(struct swb_context * ctx);
+void dbus_request_osso_browser_name(struct swb_context *ctx);
+void dbus_release_osso_browser_name(struct swb_context *ctx);
 
 const DBusGObjectInfo dbus_glib_osso_browser_object_info;
 

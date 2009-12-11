@@ -43,8 +43,8 @@ static void osso_browser_class_init(OssoBrowserClass *klass)
 #include "dbus-server-glue.h"
 
 
-static void open_address(const char * uri) {
-	char * new_uri;
+static void open_address(const char *uri) {
+	char *new_uri;
 	size_t new_uri_len;
 
 	if (!uri && uri[0] == '/') {
@@ -69,19 +69,19 @@ static void open_address(const char * uri) {
  * The com.nokia.osso_browser D-Bus interface
  */
 gboolean osso_browser_load_url(OssoBrowser *obj,
-		const char * uri, GError **error) {
+		const char *uri, GError **error) {
 	open_address(uri);
 	return TRUE;
 }
 
 gboolean osso_browser_mime_open(OssoBrowser *obj,
-		const char * uri, GError **error) {
+		const char *uri, GError **error) {
 	open_address(uri);
 	return TRUE;
 }
 
 gboolean osso_browser_open_new_window(OssoBrowser *obj,
-		const char * uri, GError **error) {
+		const char *uri, GError **error) {
 	open_address(uri);
 	return TRUE;
 }
@@ -95,15 +95,15 @@ gboolean osso_browser_top_application(OssoBrowser *obj,
 /* This is a "undocumented", non-standard extension to the API, ONLY
    for use by /usr/bin/browser wrapper to implement --url */
 gboolean osso_browser_switchboard_launch_microb(OssoBrowser *obj,
-		const char * uri, GError **error) {
+		const char *uri, GError **error) {
 	launch_microb(&ctx, (char *)uri);
 	return TRUE;
 }
 
 
 /* Register the name com.nokia.osso_browser on the D-Bus session bus */
-void dbus_request_osso_browser_name(struct swb_context * ctx) {
-	GError * error = NULL;
+void dbus_request_osso_browser_name(struct swb_context *ctx) {
+	GError *error = NULL;
 	guint result;
 
 	if (!ctx || !ctx->dbus_proxy)
@@ -125,8 +125,8 @@ void dbus_request_osso_browser_name(struct swb_context * ctx) {
 }
 
 /* Release the name com.nokia.osso_browser on the D-Bus session bus */
-void dbus_release_osso_browser_name(struct swb_context * ctx) {
-	GError * error = NULL;
+void dbus_release_osso_browser_name(struct swb_context *ctx) {
+	GError *error = NULL;
 	guint result;
 
 	if (!ctx || !ctx->dbus_proxy)

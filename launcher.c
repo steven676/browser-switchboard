@@ -34,10 +34,10 @@
 
 #define LAUNCH_DEFAULT_BROWSER launch_tear
 
-static void launch_tear(struct swb_context * ctx, char * uri) {
+static void launch_tear(struct swb_context *ctx, char *uri) {
 	int status;
-	static DBusGProxy * tear_proxy = NULL;
-	GError * error = NULL;
+	static DBusGProxy *tear_proxy = NULL;
+	GError *error = NULL;
 	pid_t pid;
 
 	if (!uri)
@@ -73,7 +73,7 @@ static void launch_tear(struct swb_context * ctx, char * uri) {
 	}
 }
 
-void launch_microb(struct swb_context * ctx, char * uri) {
+void launch_microb(struct swb_context *ctx, char *uri) {
 	int kill_browserd = 0;
 	int status;
 	pid_t pid;
@@ -118,17 +118,16 @@ void launch_microb(struct swb_context * ctx, char * uri) {
 	dbus_request_osso_browser_name(ctx);
 }
 
-static void launch_other_browser(struct swb_context * ctx, char * uri) {
-	char * command;
-	char * quoted_uri;
+static void launch_other_browser(struct swb_context *ctx, char *uri) {
+	char *command;
+	char *quoted_uri, *quote;
+
 	size_t cmdlen, urilen;
 
 	if (!uri || !strcmp(uri, "new_window"))
 		uri = "";
 	urilen = strlen(uri);
 	if (urilen > 0) {
-		char * quote;
-
 		/* Quote the URI */
 		/* urilen+3 = length of URI + 2x \' + \0 */
 		if (!(quoted_uri = calloc(urilen+3, sizeof(char))))
@@ -181,7 +180,7 @@ static void launch_other_browser(struct swb_context * ctx, char * uri) {
 	execl("/bin/sh", "/bin/sh", "-c", command, (char *)NULL);
 }
 
-static void use_other_browser_cmd(struct swb_context * ctx, char * cmd) {
+static void use_other_browser_cmd(struct swb_context *ctx, char *cmd) {
 	size_t len = strlen(cmd);
 
 	free(ctx->other_browser_cmd);
@@ -197,7 +196,7 @@ static void use_other_browser_cmd(struct swb_context * ctx, char * cmd) {
 	}
 }
 
-void update_default_browser(struct swb_context * ctx, char * default_browser) {
+void update_default_browser(struct swb_context *ctx, char *default_browser) {
 	if (!ctx)
 		return;
 
@@ -227,7 +226,7 @@ void update_default_browser(struct swb_context * ctx, char * default_browser) {
 	}
 }
 
-void launch_browser(struct swb_context * ctx, char * uri) {
+void launch_browser(struct swb_context *ctx, char *uri) {
 	if (ctx && ctx->default_browser_launcher)
 		ctx->default_browser_launcher(ctx, uri);
 }

@@ -40,7 +40,7 @@
 
 struct swb_context ctx;
 
-static void set_config_defaults(struct swb_context * ctx) {
+static void set_config_defaults(struct swb_context *ctx) {
 	if (!ctx)
 		return;
 	free(ctx->other_browser_cmd);
@@ -162,9 +162,9 @@ out_noopen:
 }
 
 int main() {
-	OssoBrowser * obj;
-	GMainLoop * mainloop;
-	GError * error = NULL;
+	OssoBrowser *obj;
+	GMainLoop *mainloop;
+	GError *error = NULL;
 
 	read_config(0);
 

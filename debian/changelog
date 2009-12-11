@@ -1,0 +1,32 @@
+browser-proxy (2.1-1) extras-devel; urgency=low
+
+  * New "upstream" release.
+  * Upstream changes:
+    - I'm now the upstream maintainer.
+    - License is clarified (GPLv2+).
+    - Use a config file ($HOME/.config/browser-proxy) for settings, if it
+      exists.
+    - Add support for launching Fennec and Midori out of the box.
+    - Introduce a config option default_browser for selecting the default
+      browser.
+    - Add support for launching an arbitrary browser using the
+      other_browser_cmd config option.
+    - Run maemo-invoker directly instead of /usr/bin/browser to avoid a loop
+      when /usr/bin/browser is a wrapper invoking browser-proxy.
+    - Add a new, private D-Bus method for a /usr/bin/browser wrapper to use.
+  * Packaging changes:
+    - Ship a /usr/bin/browser wrapper script which ensures that launching
+      MicroB with /usr/bin/browser works when browser-proxy is installed.
+    - Update copyright to reflect licensing changes.
+    - Conflict with Mozilla's fennec-dbus-proxy (see Mozilla Bugzilla
+      #499904); both provide the com.nokia.osso_browser service and the two
+      probably shouldn't be co-installed.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Wed, 09 Dec 2009 17:54:16 -0800
+
+browser-proxy (2.0-1) extras-devel; urgency=low
+
+  * Initial release. 
+
+ -- Steven Luo <steven+maemo@steven676.net>  Wed,  2 Dec 2009 17:56:24 -0800
+

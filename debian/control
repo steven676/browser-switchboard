@@ -1,0 +1,23 @@
+Source: browser-proxy
+Section: user/network
+Priority: extra
+Maintainer: Steven Luo <steven+maemo@steven676.net>
+Build-Depends: debhelper (>= 5)
+Standards-Version: 3.7.2
+
+Package: browser-proxy
+Architecture: all
+Depends: dbus, python2.5, python2.5-dbus, python2.5-gobject, tear, ${misc:Depends}
+Conflicts: fennec-dbus-client
+Description: allows any web browser to be used as the default
+ browser-proxy is a script which implements the osso-browser
+ D-Bus interface used by Maemo applications to launch a
+ browser.  It can be used to make a browser other than MicroB
+ (e.g. Tear) the default browser.  It can also launch MicroB
+ without having a large background process (browserd) running at
+ all times, saving memory when MicroB isn't in use.
+ .
+ browser-proxy currently supports launching Tear, MicroB, Fennec
+ (Mobile Firefox), and Midori, and can easily be extended to
+ support other browsers.
+Homepage: http://browser-switch.garage.maemo.org/

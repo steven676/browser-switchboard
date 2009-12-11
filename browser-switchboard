@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# browser-proxy.py
+# browser-switchboard
 # version 2.2 by steven676 and xiojason
 
 # simple python-dbus service that proxies osso_browser events to Tear
@@ -33,7 +33,7 @@ import dbus.service
 import dbus.glib
 
 # Set default configuration values
-# These can be overriden by the config file $HOME/.config/browser-proxy
+# These can be overriden by the config file $HOME/.config/browser-switchboard
 def setconfigdefaults():
     global continuous_mode, default_browser, other_browser_cmd
 
@@ -182,7 +182,7 @@ def readconfigfile(signalnum=None, frame=None):
 
     # read configuration from the config file, if available
     try:
-        execfile(os.getenv("HOME", "/home/user") + "/.config/browser-proxy", globals())
+        execfile(os.getenv("HOME", "/home/user") + "/.config/browser-switchboard", globals())
         launcher.UpdateDefaultBrowser()
     except:
         # No valid config file available

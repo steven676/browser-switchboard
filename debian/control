@@ -1,24 +1,23 @@
-Source: browser-proxy
+Source: browser-switchboard
 Section: user/network
 Priority: extra
 Maintainer: Steven Luo <steven+maemo@steven676.net>
 Build-Depends: debhelper (>= 5)
 Standards-Version: 3.7.2
 
-Package: browser-proxy
+Package: browser-switchboard
 Architecture: all
 Depends: dbus, python2.5, python2.5-dbus, python2.5-gobject, tablet-browser-ui, ${misc:Depends}
 Recommends: tear | fennec | midori
-Conflicts: fennec-dbus-client
+Provides: browser-proxy
+Replaces: browser-proxy
+Conflicts: browser-proxy, fennec-dbus-client
 Description: allows any web browser to be used as the default
- browser-proxy is a script which implements the osso-browser
- D-Bus interface used by Maemo applications to launch a
- browser.  It can be used to make a browser other than MicroB
- (e.g. Tear) the default browser.  It can also launch MicroB
- without having a large background process (browserd) running at
- all times, saving memory when MicroB isn't in use.
- .
- browser-proxy currently supports launching Tear, MicroB, Fennec
- (Mobile Firefox), and Midori, and can easily be extended to
- support other browsers.
+ Browser Switchboard is a program which allows you to choose
+ which browser to use as the default browser.  It supports
+ MicroB, Tear, Fennec/Mobile Firefox, and Midori out of the box,
+ and can easily be extended to support other browsers.  It can
+ also launch MicroB without having a large background process
+ (browserd) running at all times, saving memory when MicroB 
+ isn't in use.
 Homepage: http://browser-switch.garage.maemo.org/

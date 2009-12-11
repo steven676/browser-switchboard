@@ -1,5 +1,5 @@
 #!/bin/sh
-# postrm script for browser-proxy
+# postrm script for browser-switchboard
 #
 # see: dh_installdeb(1)
 
@@ -20,7 +20,7 @@ set -e
 
 kill_old_proxies() {
 	# This would be so much nicer with pgrep/pkill ...
-	proxy_pids=`busybox ps | fgrep "python /usr/bin/browser-proxy" | fgrep -v grep | awk '{ print $1 }'`
+	proxy_pids=`busybox ps | fgrep "python /usr/bin/browser-switchboard" | fgrep -v grep | awk '{ print $1 }'`
 	if [ ! -z "$proxy_pids" ]; then
 		kill $proxy_pids
 	fi
@@ -28,22 +28,22 @@ kill_old_proxies() {
 
 case "$1" in
     remove)
-	dpkg-divert --remove --package browser-proxy --rename \
+	dpkg-divert --remove --package browser-switchboard --rename \
 	    --divert /usr/bin/browser.tablet-browser-ui \
 	    /usr/bin/browser
-	dpkg-divert --remove --package browser-proxy --rename \
+	dpkg-divert --remove --package browser-switchboard --rename \
 	    --divert /usr/share/dbus-1/services/com.nokia.osso_browser.tablet-browser-ui \
 	    /usr/share/dbus-1/services/com.nokia.osso_browser.service
 	# Try to make dbus-daemon pick up the change in services file
 	kill -HUP `pidof dbus-daemon`
 
-	# Kill off any running browser-proxy to make sure that the default
-	# browser gets launched
+	# Kill off any running browser-switchboard to make sure that the
+	# default browser gets launched
 	kill_old_proxies
 	;;
     upgrade|disappear)
-	# Kill off any running browser-proxy to make sure that the new version
-	# gets launched the next time a D-Bus request is made
+	# Kill off any running browser-switchboard to make sure that the new
+	# version gets launched the next time a D-Bus request is made
 	kill_old_proxies
 	;;
     purge|failed-upgrade|abort-install|abort-upgrade)

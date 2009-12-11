@@ -1,5 +1,5 @@
 #!/bin/sh
-# preinst script for browser-proxy
+# preinst script for browser-switchboard
 #
 # see: dh_installdeb(1)
 
@@ -16,10 +16,10 @@ set -e
 
 case "$1" in
     install|upgrade)
-	dpkg-divert --add --package browser-proxy --rename \
+	dpkg-divert --add --package browser-switchboard --rename \
 	    --divert /usr/share/dbus-1/services/com.nokia.osso_browser.tablet-browser-ui \
 	    /usr/share/dbus-1/services/com.nokia.osso_browser.service
-	dpkg-divert --add --package browser-proxy --rename \
+	dpkg-divert --add --package browser-switchboard --rename \
 	    --divert /usr/bin/browser.tablet-browser-ui \
 	    /usr/bin/browser
     ;;

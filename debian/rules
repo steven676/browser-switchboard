@@ -37,10 +37,11 @@ install: build
 	dh_clean -k 
 	dh_installdirs
 
-	# Add here commands to install the package into debian/browser-proxy.
-	install -c -m 0755 browser-proxy debian/browser-proxy/usr/bin/browser-proxy
-	install -c -m 0644 com.nokia.osso_browser.service debian/browser-proxy/usr/share/dbus-1/services
-	install -c -m 0755 browser debian/browser-proxy/usr/bin/browser
+	# Add here commands to install the package into
+	# debian/browser-switchboard.
+	install -c -m 0755 browser-switchboard debian/browser-switchboard/usr/bin/browser-switchboard
+	install -c -m 0644 com.nokia.osso_browser.service debian/browser-switchboard/usr/share/dbus-1/services
+	install -c -m 0755 browser debian/browser-switchboard/usr/bin/browser
 
 
 binary-indep: build install

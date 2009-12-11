@@ -46,9 +46,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 	printf("launch_tear with uri '%s'\n", uri);
 
 	status = system("pidof tear > /dev/null");
-	if (!WIFEXITED(status))
-		exit(1);
-	if (!WEXITSTATUS(status)) {
+	if (WIFEXITED(status) && !WEXITSTATUS(status)) {
 		if (!tear_proxy)
 			tear_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
 				       	"com.nokia.tear", "/com/nokia/tear",
@@ -80,9 +78,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		uri = "new_window";
 
 	status = system("pidof /usr/sbin/browserd > /dev/null");
-	if (!WIFEXITED(status))
-		exit(1);
-	if (WEXITSTATUS(status)) {
+	if (WIFEXITED(status) && WEXITSTATUS(status)) {
 		kill_browserd = 1;
 		system("/usr/sbin/browserd -d");
 	}

@@ -53,10 +53,8 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 			tear_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
 				       	"com.nokia.tear", "/com/nokia/tear",
 					"com.nokia.Tear");
-		dbus_g_proxy_call(tear_proxy, "OpenAddress",
-				&error,
-				G_TYPE_STRING, uri,
-				G_TYPE_INVALID);
+		dbus_g_proxy_call(tear_proxy, "OpenAddress", &error,
+				  G_TYPE_STRING, uri, G_TYPE_INVALID);
 		if (!ctx->continuous_mode)
 			exit(0);
 	} else {
@@ -102,10 +100,10 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		/* Child process */
 		if (!strcmp(uri, "new_window")) {
 			execl("/usr/bin/maemo-invoker",
-				       "browser", (char *)NULL);
+			      "browser", (char *)NULL);
 		} else {
 			execl("/usr/bin/maemo-invoker",
-					"browser", "--url", uri, (char *)NULL);
+			      "browser", "--url", uri, (char *)NULL);
 		}
 	}
 
@@ -123,6 +121,8 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 	char *quoted_uri, *quote;
 
 	size_t cmdlen, urilen;
+	size_t quoted_uri_size;
+	size_t offset;
 
 	if (!uri || !strcmp(uri, "new_window"))
 		uri = "";
@@ -132,20 +132,30 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 		/* urilen+3 = length of URI + 2x \' + \0 */
 		if (!(quoted_uri = calloc(urilen+3, sizeof(char))))
 			exit(1);
-		strncpy(quoted_uri+1, uri, urilen);
-		quoted_uri[0] = quoted_uri[urilen+1] = '\'';
-		/* calloc zeroes the memory, so string is automatically
-		   null terminated */
+		snprintf(quoted_uri, urilen+3, "'%s'", uri);
 
 		/* If there are any 's in the original URI, URL-escape them
 		   (replace them with %27) */
+		quoted_uri_size = urilen + 3;
 		quote = quoted_uri + 1;
 		while ((quote = strchr(quote, '\'')) &&
-				(quote-quoted_uri) < strlen(quoted_uri)-1) {
-			/* 3 = strlen("%27")-strlen("'") + \0 */
-			if (!(quoted_uri = realloc(quoted_uri,
-							strlen(quoted_uri)+3)))
+		       (offset = quote-quoted_uri) < strlen(quoted_uri)-1) {
+			/* Check to make sure we don't shrink the memory area
+			   as a result of integer overflow */
+			if (quoted_uri_size+2 <= quoted_uri_size)
 				exit(1);
+
+			/* Grow the memory area;
+			   2 = strlen("%27")-strlen("'") */
+			if (!(quoted_uri = realloc(quoted_uri,
+						   quoted_uri_size+2)))
+				exit(1);
+			quoted_uri_size = quoted_uri_size + 2;
+
+			/* Recalculate the location of the ' character --
+			   realloc() may have moved the string in memory */
+			quote = quoted_uri + offset;
+
 			/* Move the string after the ', including the \0,
 			   over two chars */
 			memmove(quote+3, quote+1, strlen(quote)+1);
@@ -190,8 +200,7 @@ static void use_other_browser_cmd(struct swb_context *ctx, char *cmd) {
 		ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
 	} else {
 		ctx->other_browser_cmd = strncpy(ctx->other_browser_cmd,
-				cmd, len);
-		ctx->other_browser_cmd[len] = '\0';
+						 cmd, len+1);
 		ctx->default_browser_launcher = launch_other_browser;
 	}
 }

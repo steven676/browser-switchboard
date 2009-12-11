@@ -71,8 +71,7 @@ static void read_config(int signalnum) {
 	len = strlen(homedir) + strlen(CONFIGFILE_LOC) + 1;
 	if (!(configfile = calloc(len, sizeof(char))))
 		goto out_noopen;
-	strncpy(configfile, homedir, strlen(homedir));
-	strncat(configfile, CONFIGFILE_LOC, strlen(CONFIGFILE_LOC));
+	snprintf(configfile, len, "%s%s", homedir, CONFIGFILE_LOC);
 
 	if (!(fp = fopen(configfile, "r")))
 		goto out_noopen;

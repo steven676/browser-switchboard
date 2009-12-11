@@ -51,8 +51,7 @@ static void open_address(const char *uri) {
 		new_uri_len = strlen("file://") + strlen(uri) + 1;
 		if (!(new_uri = calloc(new_uri_len, sizeof(char))))
 			exit(1);
-		strncpy(new_uri, "file://", strlen("file://"));
-		strncat(new_uri, uri, strlen(uri));
+		snprintf(new_uri, new_uri_len, "%s%s", "file://", uri);
 
 		launch_browser(&ctx, new_uri);
 		/* If launch_browser didn't exec something in this process,
@@ -110,11 +109,11 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 		return;
 
 	if (!dbus_g_proxy_call(ctx->dbus_proxy, "RequestName", &error,
-				G_TYPE_STRING, "com.nokia.osso_browser",
-				G_TYPE_UINT, DBUS_NAME_FLAG_REPLACE_EXISTING|DBUS_NAME_FLAG_DO_NOT_QUEUE,
-				G_TYPE_INVALID,
-				G_TYPE_UINT, &result,
-				G_TYPE_INVALID)) {
+			       G_TYPE_STRING, "com.nokia.osso_browser",
+			       G_TYPE_UINT, DBUS_NAME_FLAG_REPLACE_EXISTING|DBUS_NAME_FLAG_DO_NOT_QUEUE,
+			       G_TYPE_INVALID,
+			       G_TYPE_UINT, &result,
+			       G_TYPE_INVALID)) {
 		printf("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
@@ -133,8 +132,8 @@ void dbus_release_osso_browser_name(struct swb_context *ctx) {
 		return;
 
 	dbus_g_proxy_call(ctx->dbus_proxy, "ReleaseName", &error,
-				G_TYPE_STRING, "com.nokia.osso_browser",
-				G_TYPE_INVALID,
-				G_TYPE_UINT, &result,
-				G_TYPE_INVALID);
+			  G_TYPE_STRING, "com.nokia.osso_browser",
+			  G_TYPE_INVALID,
+			  G_TYPE_UINT, &result,
+			  G_TYPE_INVALID);
 }

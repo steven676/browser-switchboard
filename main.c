@@ -100,7 +100,6 @@ static void read_config(int signalnum) {
 	/* Read in the config file one line at a time and parse it
 	   XXX doesn't deal with lines longer than MAXLINE */
 	while (fgets(buf, MAXLINE, fp)) {
-		printf("%s", buf);
 		/* skip blank lines and comments */
 		if (!regexec(&re_ignore, buf, 0, NULL, 0))
 			continue;

@@ -1,0 +1,19 @@
+#!/bin/sh
+
+case "$1" in
+	--url=* )
+		url="${1#--url=}"
+		;;
+	--url )
+		url="$2"
+		;;
+esac
+
+if pidof browser > /dev/null 2>&1; then
+	method=open_new_window
+else
+	method=switchboard_launch_microb
+fi
+
+dbus-send --session --type=method_call --print-reply --dest="com.nokia.osso_browser" /com/nokia/osso_browser/request com.nokia.osso_browser.$method string:${url:-"new_window"} > /dev/null 2>&1
+exit 0

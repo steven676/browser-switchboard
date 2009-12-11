@@ -1,0 +1,29 @@
+# browser-proxy.py
+# version 2.2 by steven676 and xiojason
+# (see http://browser-switch.garage.maemo.org/)
+
+# simple python-dbus service that proxies osso_browser events to Tear
+# based on code from http://paste.lisp.org/display/45824
+
+# installation:
+# 0. ensure the needed python packages are installed:
+#    python2.5, python2.5-dbus, and python2.5-gtk2
+# 1. place this file in /home/user as browser-proxy.py
+# 2. make executable (chmod +x browser-proxy.py)
+# 3. change /usr/share/dbus-1/services/com.nokia.osso_browser.service to read:
+# [D-BUS Service]
+# Name=com.nokia.osso_browser
+# Exec=/home/user/browser-proxy.py
+# 4. disable tablet-browser-service (aka browserd) (optional, saves memory)
+# 5. you may wish to reboot.
+
+# notes:
+# - opening urls will be a bit slow. it takes some time to relay the messages to Tear
+# - modifications to the script may require the killing of an already-running
+#   browser-proxy.py process -- just use 'kill' to stop it.
+# - modifying the osso_browser.service file prevents MicroB/browserd from working.
+#   if you wish to restore MicroB/browserd, change the service file's contents back to:
+# [D-BUS Service]
+# Name=com.nokia.osso_browser
+# Exec=/usr/bin/browser
+#   and re-enable tablet-browser-service again.

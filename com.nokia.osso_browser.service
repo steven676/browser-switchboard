@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.nokia.osso_browser
+Exec=/usr/bin/browser-proxy

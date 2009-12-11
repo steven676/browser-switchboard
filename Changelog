@@ -1,0 +1,21 @@
+2.1 -> steven676 is now the primary maintainer
+    -- use a config file, /home/user/.config/browser-proxy, if available
+    -- add support for launching Fennec and Midori out of the box
+    -- introduce a config option default_browser for selecting the default browser ("tear", "microb", "fennec", "midori", "other")
+    -- add support for launching an arbitrary browser using the other_browser_cmd config option
+    -- run maemo-invoker directly instead of /usr/bin/browser to avoid a loop when /usr/bin/browser is a wrapper invoking this script
+    -- add a new, private D-Bus method for a /usr/bin/browser wrapper to use to launch MicroB with a URI
+2.0 -> several patches contributed by steven676:
+    -- only launch one window if Tear isn't already running
+    -- use gobject instead of gtk+ for main loop, uses less memory
+    -- use python dbus interface instead of shelling out for dbus-send
+    -- add 'continuous mode' option to keep proxy running (faster response)
+    -- kill browserd on exit if launched from the script
+    -- add option to use MicroB by default
+1.5 -> added mime_open method used by File manager to open .html files
+1.4 -> can now manually launch MicroB/browser -- while open, it will be used instead
+    -- without --print-reply, the initial launching message seems to get lost
+1.3 -> sniff for local paths, prefix with file:// (fixes feedcircuit)
+1.2 -> removed return values, added osso_browser/request namespace (fixes Pidgin)
+1.1 -> fixed wrong capitalization in dbus message
+1.0

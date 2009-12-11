@@ -38,12 +38,13 @@ def setconfigdefaults():
     global continuous_mode, default_browser, other_browser_cmd
 
     # continuous_mode: 0 -- close after handling a request; 1 -- run
-    #   continuously in the background
+    # continuously in the background
     continuous_mode = 0
     # default_browser: "tear", "microb", "fennec", "midori", or "other"
-    default_browser = "tear"
+    # empty string is handled specially -- see below
+    default_browser = ""
     # If default browser is "other", what program to run (%s will be replaced
-    #   by URI)
+    # by URI)
     other_browser_cmd = ""
 
 class BrowserLauncher:
@@ -126,6 +127,13 @@ class BrowserLauncher:
             else:
                 print "default_browser is 'other', but no other_browser_cmd set -- using default"
                 self.LaunchBrowser = self.LaunchTear
+        elif default_browser == "":
+            # If default_browser is empty, use Tear as the default if
+            # installed, otherwise use MicroB
+            if os.access("/usr/bin/tear", X_OK):
+                self.LaunchBrowser = self.LaunchTear
+            else
+                self.LaunchBrowser = self.LaunchMicroB
         else:
             print "Unknown default_browser %s, using default" % default_browser
             self.LaunchBrowser = self.LaunchTear

@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <regex.h>
 #include <dbus/dbus-glib.h>
 
 #include "browser-switchboard.h"
@@ -54,14 +55,14 @@ static void waitforzombies(int signalnum) {
 }
 
 static void read_config(int signalnum) {
-	char * homedir;
-	char * configfile;
+	char *homedir, *configfile;
 	size_t len;
 	char buf[MAXLINE];
-	char * tmp;
-	char * value;
-	char * default_browser = NULL;
-	FILE * fp;
+	char *key, *value;
+	char *default_browser = NULL;
+	FILE *fp;
+	regex_t re_ignore, re_config1, re_config2;
+	regmatch_t substrs[3];
 
 	set_config_defaults(&ctx);
 
@@ -76,36 +77,64 @@ static void read_config(int signalnum) {
 	if (!(fp = fopen(configfile, "r")))
 		goto out_noopen;
 
+	/* compile regex matching blank lines or comments */
+	if (regcomp(&re_ignore, "^[[:space:]]*(#|$)", REG_EXTENDED|REG_NOSUB))
+		goto out_nore;
+	/* compile regex matching foo = "bar", with arbitrary whitespace at
+	   beginning and end of line and surrounding the = */
+	if (regcomp(&re_config1,
+		    "^[[:space:]]*([^=[:space:]]+)[[:space:]]*=[[:space:]]*\"(.*)\"[[:space:]]*$",
+		    REG_EXTENDED)) {
+		regfree(&re_ignore);
+		goto out_nore;
+	}
+	/* compile regex matching foo = bar, with arbitrary whitespace at
+	   beginning of line and surrounding the = */
+	if (regcomp(&re_config2,
+		    "^[[:space:]]*([^=[:space:]]+)[[:space:]]*=[[:space:]]*(.*)$",
+		    REG_EXTENDED|REG_NEWLINE)) {
+		regfree(&re_ignore);
+		regfree(&re_config1);
+		goto out_nore;
+	}
+
 	/* Read in the config file one line at a time and parse it
 	   XXX doesn't deal with lines longer than MAXLINE */
 	while (fgets(buf, MAXLINE, fp)) {
-		/* skip comments */
-		if (buf[0] == '#')
-			continue;
-		/* look for the = in the line */
-		if (!(tmp = strchr(buf, '=')))
+		printf("%s", buf);
+		/* skip blank lines and comments */
+		if (!regexec(&re_ignore, buf, 0, NULL, 0))
 			continue;
 
-		/* split the line into parameter (before =, in buf) and
-		   value (after =, in value) */
-		if (!(value = calloc(strlen(tmp+1)+1, sizeof(char))))
+		/* Find the substrings corresponding to the key and value
+		   If the line doesn't match our idea of a config file entry,
+		   skip it */
+		if (regexec(&re_config1, buf, 3, substrs, 0) &&
+		    regexec(&re_config2, buf, 3, substrs, 0))
+			continue;
+		if (substrs[1].rm_so == -1 || substrs[2].rm_so == -1)
+			continue;
+
+		/* copy the config value into a new string */
+		len = substrs[2].rm_eo - substrs[2].rm_so;
+		if (!(value = calloc(len+1, sizeof(char))))
 			goto out;
-		strncpy(value, tmp+1, strlen(tmp+1));
-		value[strlen(tmp+1)] = '\0';
-		/* scribble over the = in buf with a \0 -- that makes buf
-		   just the parameter name */
-		*tmp = '\0';
-		/* if we find a newline in value, replace that with a \0 too */
-		if ((tmp = strchr(value, '\n')))
-			*tmp = '\0';
+		strncpy(value, buf+substrs[2].rm_so, len);
+		/* calloc() zeroes the memory, so string is automatically
+		   null terminated */
 
-		if (!strcmp(buf, "continuous_mode")) {
+		/* make key point to a null-terminated string holding the 
+		   config key */
+		key = buf + substrs[1].rm_so;
+		buf[substrs[1].rm_eo] = '\0';
+
+		if (!strcmp(key, "continuous_mode")) {
 			ctx.continuous_mode = atoi(value);
 			free(value);
-		} else if (!strcmp(buf, "default_browser")) {
+		} else if (!strcmp(key, "default_browser")) {
 			if (!default_browser)
 				default_browser = value;
-		} else if (!strcmp(buf, "other_browser_cmd")) {
+		} else if (!strcmp(key, "other_browser_cmd")) {
 			if (!ctx.other_browser_cmd)
 				ctx.other_browser_cmd = value;
 		} else {
@@ -120,6 +149,10 @@ static void read_config(int signalnum) {
 	printf("other_browser_cmd: '%s'\n", ctx.other_browser_cmd?ctx.other_browser_cmd:"NULL");
 
 out:
+	regfree(&re_ignore);
+	regfree(&re_config1);
+	regfree(&re_config2);
+out_nore:
 	fclose(fp);
 out_noopen:
 	update_default_browser(&ctx, default_browser);

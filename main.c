@@ -169,7 +169,7 @@ int main() {
 	if (ctx.continuous_mode) {
 		struct sigaction act;
 		act.sa_flags = SA_RESTART;
-		act.sa_mask = 0;
+		sigemptyset(&(act.sa_mask));
 
 		act.sa_handler = waitforzombies;
 		if (sigaction(SIGCHLD, &act, NULL) == -1) {

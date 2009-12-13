@@ -160,7 +160,7 @@ out_noopen:
 }
 
 int main() {
-	OssoBrowser *obj;
+	OssoBrowser *obj_osso_browser, *obj_osso_browser_req;
 	GMainLoop *mainloop;
 	GError *error = NULL;
 
@@ -203,11 +203,13 @@ int main() {
 
 	dbus_request_osso_browser_name(&ctx);
 
-	obj = g_object_new(OSSO_BROWSER_TYPE, NULL);
+	obj_osso_browser = g_object_new(OSSO_BROWSER_TYPE, NULL);
+	obj_osso_browser_req = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	dbus_g_connection_register_g_object(ctx.session_bus,
-			"/com/nokia/osso_browser", G_OBJECT(obj));
+			"/com/nokia/osso_browser", G_OBJECT(obj_osso_browser));
 	dbus_g_connection_register_g_object(ctx.session_bus,
-			"/com/nokia/osso_browser/request", G_OBJECT(obj));
+			"/com/nokia/osso_browser/request",
+			G_OBJECT(obj_osso_browser_req));
 
 	mainloop = g_main_loop_new(NULL, FALSE);
 	printf("Starting main loop\n");

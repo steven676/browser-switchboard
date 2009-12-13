@@ -154,7 +154,7 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 
 			/* Move the string after the ', including the \0,
 			   over two chars */
-			memmove(quote+3, quote+1, strlen(quote)+1);
+			memmove(quote+3, quote+1, strlen(quote));
 			memcpy(quote, "%27", 3);
 			quote = quote + 3;
 		}

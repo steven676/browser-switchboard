@@ -47,7 +47,11 @@ static void open_address(const char *uri) {
 	char *new_uri;
 	size_t new_uri_len;
 
-	if (!uri && uri[0] == '/') {
+	if (!uri)
+		/* Not much to do in this case ... */
+		return;
+
+	if (uri[0] == '/') {
 		new_uri_len = strlen("file://") + strlen(uri) + 1;
 		if (!(new_uri = calloc(new_uri_len, sizeof(char))))
 			exit(1);

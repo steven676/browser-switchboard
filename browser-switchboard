@@ -130,9 +130,9 @@ class BrowserLauncher:
         elif default_browser == "":
             # If default_browser is empty, use Tear as the default if
             # installed, otherwise use MicroB
-            if os.access("/usr/bin/tear", X_OK):
+            if os.access("/usr/bin/tear", os.X_OK):
                 self.LaunchBrowser = self.LaunchTear
-            else
+            else:
                 self.LaunchBrowser = self.LaunchMicroB
         else:
             print "Unknown default_browser %s, using default" % default_browser
@@ -191,10 +191,14 @@ def readconfigfile(signalnum=None, frame=None):
     # read configuration from the config file, if available
     try:
         execfile(os.getenv("HOME", "/home/user") + "/.config/browser-switchboard", globals())
-        launcher.UpdateDefaultBrowser()
     except:
-        # No valid config file available
-        pass
+        # Try the legacy config file location
+        try:
+            execfile(os.getenv("HOME", "/home/user") + "/.config/browser-proxy", globals())
+        except:
+            # No valid config file available
+            pass
+    launcher.UpdateDefaultBrowser()
 
 setconfigdefaults()
 

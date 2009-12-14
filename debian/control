@@ -20,4 +20,5 @@ Description: allows any web browser to be used as the default
  also launch MicroB without having a large background process
  (browserd) running at all times, saving memory when MicroB 
  isn't in use.
+Maemo-Display-Name: Browser Switchboard
 Homepage: http://browser-switch.garage.maemo.org/

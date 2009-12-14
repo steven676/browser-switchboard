@@ -10,7 +10,6 @@ Architecture: all
 Depends: dbus, python2.5, python2.5-dbus, python2.5-gobject, tablet-browser-ui, ${misc:Depends}
 Recommends: tear | fennec | midori
 Provides: browser-proxy
-Replaces: browser-proxy
 Conflicts: browser-proxy, fennec-dbus-client
 Description: allows any web browser to be used as the default
  Browser Switchboard is a program which allows you to choose

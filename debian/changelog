@@ -10,9 +10,9 @@ browser-switchboard (2.2-1) extras-devel; urgency=low
       browser-switchboard package and Tear not installed
     - substantial documentation update
   * Packaging changes:
-    - Rename the package to browser-switchboard; try to accommodate
-      updates from browser-proxy by Provides/Conflicts/Replaces
-      browser-proxy.
+    - Rename the package to browser-switchboard; Conflict with browser-proxy
+      to make sure that users don't try to install over it.  browser-proxy
+      needs to be uninstalled before installing browser-switchboard.
     - Drop the Depends on tear, now that installing browser-switchboard
       doesn't break link opening when Tear isn't installed.  Recommend
       tear | fennec | midori instead.

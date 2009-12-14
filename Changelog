@@ -1,3 +1,10 @@
+2.2 -> rename the package to browser-switchboard
+    -- move the config file to $HOME/.config/browser-switchboard, and fall back
+       to the old location if no config file is found
+    -- if no config file is found and Tear isn't installed, launch MicroB;
+       this avoids breaking link opening on a system with a freshly installed
+       browser-switchboard package and Tear not installed
+    -- substantial documentation update
 2.1 -> steven676 is now the primary maintainer
     -- use a config file, /home/user/.config/browser-proxy, if available
     -- add support for launching Fennec and Midori out of the box

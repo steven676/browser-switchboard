@@ -1,29 +1,187 @@
-Browser Switchboard
-version 2.2 by steven676 and xiojason
-(see http://browser-switch.garage.maemo.org/)
+BROWSER SWITCHBOARD
 
-simple python-dbus service that proxies osso_browser events to Tear
-based on code from http://paste.lisp.org/display/45824
+Browser Switchboard is a program which allows you to choose which
+browser to use as the default browser. It supports MicroB, Tear,
+Fennec/Mobile Firefox, and Midori out of the box, and can also be used
+to launch MicroB without having browserd running.
 
-installation:
-0. ensure the needed python packages are installed:
-   python2.5, python2.5-dbus, and python2.5-gtk2
-1. place this file in /home/user as browser-switchboard
-2. make executable (chmod +x browser-switchboard)
-3. change /usr/share/dbus-1/services/com.nokia.osso_browser.service to read:
-[D-BUS Service]
-Name=com.nokia.osso_browser
-Exec=/home/user/browser-switchboard
-4. disable tablet-browser-service (aka browserd) (optional, saves memory)
-5. you may wish to reboot.
 
-notes:
-- opening urls will be a bit slow. it takes some time to relay the messages to Tear
-- modifications to the script may require the killing of an already-running
-  browser-switchboard process -- just use 'kill' to stop it.
-- modifying the osso_browser.service file prevents MicroB/browserd from working.
-  if you wish to restore MicroB/browserd, change the service file's contents back to:
-[D-BUS Service]
-Name=com.nokia.osso_browser
-Exec=/usr/bin/browser
-  and re-enable tablet-browser-service again.
+Download:
+Binary packages and source are available for download from the project
+page on garage.maemo.org: https://garage.maemo.org/frs/?group_id=1159
+
+
+Quick Start:
+1. Download the binary package: browser-switchboard_X.Y-Z_all.deb
+(where X.Y-Z is the version number, of course).
+2. Install the package using the Application Manager (open the
+Application Manager, then select Application->Install from file in the
+menu).
+
+If Tear (http://talk.maemo.org/showthread.php?t=28539) is installed,
+it should now be the default browser, meaning that links in most
+applications, locally-saved web pages opened in the file manager, and
+entries in the Web sidebar panel should now open in Tear.  If Tear isn't
+installed, MicroB will be used as the default browser; keep reading to
+see how to change the default browser to something else.
+
+MicroB can always be opened via the Web menu entry in the applications
+panel (located in the Internet menu by default), or by running "browser"
+from the shell.  While MicroB is open, it will receive all links from
+other applications; closing MicroB will restore your chosen default
+browser.
+
+Some users have reported that a restart may be necessary to ensure that
+Browser Switchboard is functioning.  If you experience trouble after
+installing the package, try rebooting your device first.
+
+
+Changing the Default Browser:
+
+By default, Tear is used as the default browser if installed (otherwise
+MicroB is the default browser).  To change this behavior, you need to
+create a configuration file (from the shell for now -- a configuration
+UI is in the works).  From a shell on your device (xterm, SSH, or
+similar), run the following (where $ is your prompt, not something you
+type):
+
+$ cat > $HOME/.config/browser-switchboard <<EOF
+default_browser = "your_browser"
+EOF
+
+where your_browser can be one of "tear", "microb", "fennec", "midori",
+or "other" (see below for more on the "other" option).  You can of
+course also edit the $HOME/.config/browser-switchboard file with your
+favorite text editor.
+
+To restore the default behavior, just delete the config file:
+
+$ rm $HOME/.config/browser-switchboard
+
+
+Advanced Configuration:
+
+Here's a more complete sample configuration file:
+
+# BEGIN SAMPLE CONFIG FILE
+# This is a comment
+# continuous_mode: 0 -- close after handling a request; 1 -- run
+# continuously in the background
+continuous_mode = 0
+# default_browser: "tear", "microb", "fennec", "midori", or "other"
+default_browser = "tear"
+# other_browser_cmd: If default browser is "other", what program
+# to run (%s will be replaced by URI)
+#other_browser_cmd = "some_browser %s"
+# END SAMPLE CONFIG FILE
+
+Lines beginning with # characters are comments and are ignored by the
+script.
+
+In continuous mode, Browser Switchboard keeps running in the background
+instead of closing after handling each request.  This saves roughly two
+seconds of startup time for each link (on my N800 running Diablo), but
+costs you about 2 MB extra memory.  Continuous mode is disabled by
+default; set continuous_mode to 1 to enable.
+
+The "tear", "microb", "fennec", and "midori" options for default_browser
+should be self-explanatory.
+
+If the default browser is "other", Browser Switchboard will run the
+program specified in other_browser_cmd as the default browser, with a
+URI replacing the %s on the command line; for example, if
+other_browser_cmd is set to "some_browser %s", and Browser Switchboard
+is asked to load http://www.google.com/, it will perform the equivalent
+of typing in 
+
+$ some_browser 'http://www.google.com/'
+
+at a shell.
+
+
+Browser Switchboard and MicroB's browserd:
+
+MicroB uses a background process called browserd to decrease its load
+time.  Browser Switchboard knows how to launch MicroB without having
+browserd running all the time, so if you don't plan on using MicroB
+often, you can disable browserd (for example, by using the
+maemo-control-services control panel applet available in Maemo Extras to
+disable tablet-browser-daemon).  This will save you about 1 MB of
+memory, but add a few seconds to MicroB's load time.
+
+
+Uninstalling Browser Switchboard:
+
+Remove the Browser Switchboard package using the Application Manager,
+and everything should be back to normal.  A reboot may be necessary for
+changes to take effect -- if you experience problems, try restarting
+your device first.
+
+
+Manual Installation:
+
+If for some reason you don't want to use the binary package to install
+Browser Switchboard, you can install it by hand:
+1. Make sure you have the necessary dependencies installed: packages
+python2.5, python2.5-dbus, and python-2.5-gobject.
+2. Download the source tarball: browser-switchboard_X.Y.orig.tar.gz
+3. Unpack the source tarball on your device:
+
+$ tar -xvzf browser-switchboard_X.Y.orig.tar.gz
+$ cd browser-switchboard-X.Y
+
+4. As root on your device, copy the browser-switchboard script to
+/usr/bin:
+
+# cp browser-switchboard /usr/bin
+
+(where # represents a root shell prompt).
+5. As root on your device, copy com.nokia.osso_browser.service to
+/usr/share/dbus-1/services, moving the existing file out of the way
+first:
+
+# mv /usr/share/dbus-1/services/com.nokia.osso_browser.service
+  /usr/share/dbus-1/services/com.nokia.osso_browser.bak
+# cp com.nokia.osso_browser.service /usr/share/dbus-1/services
+
+6. (optional) If you want running "browser" from the command line to
+work as intended, copy browser to /usr/bin, moving the original symlink
+out of the way first:
+
+# mv /usr/bin/browser /usr/bin/browser.bak
+# cp browser /usr/bin
+
+To uninstall, remove the files you installed, restore the backup copies,
+and reboot your device.
+
+
+Bug Reports and Patches:
+
+Bug reports, patches, and suggested improvements can either be sent to
+the maintainer via email (see below) or posted in the Tear thread on the
+talk.maemo.org forums (http://talk.maemo.org/showthread.php?t=28539).
+
+
+Source Code Repository:
+
+Source code is hosted in a Git (http://git-scm.com/) repository on
+git.maemo.org.  You can get a copy of the current development version by
+cloning the repository:
+
+$ git clone https://git.maemo.org/projects/browser-switch
+
+or you can browse the source using gitweb
+(https://git.maemo.org/projects/browser-switch/?p=browser-switch;a=summary).
+
+
+Maintainer:
+
+Steven Luo <steven+maemo@steven676.net> is the primary maintainer, with
+Jason Simpson (the original developer) assisting in development.
+
+
+License:
+
+Browser Switchboard is available under the terms of the GNU General
+Public License (GPL), version 2 or later (see the file LICENSE in the
+source).

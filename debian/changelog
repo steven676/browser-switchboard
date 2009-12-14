@@ -1,3 +1,27 @@
+browser-switchboard (2.2-1) extras-devel; urgency=low
+
+  * New "upstream" release.
+  * Upstream changes:
+    - rename the package to browser-switchboard
+    - move the config file to $HOME/.config/browser-switchboard, and fall back
+      to the old location if no config file is found
+    - if no config file is found and Tear isn't installed, launch MicroB;
+      this avoids breaking link opening on a system with a freshly installed
+      browser-switchboard package and Tear not installed
+    - substantial documentation update
+  * Packaging changes:
+    - Rename the package to browser-switchboard; try to accommodate
+      updates from browser-proxy by Provides/Conflicts/Replaces
+      browser-proxy.
+    - Drop the Depends on tear, now that installing browser-switchboard
+      doesn't break link opening when Tear isn't installed.  Recommend
+      tear | fennec | midori instead.
+    - Add a friendly display name for the application manager in
+      debian/control.
+    - Update the package description.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Mon, 14 Dec 2009 03:39:04 -0800
+
 browser-proxy (2.1-1) extras-devel; urgency=low
 
   * New "upstream" release.

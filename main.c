@@ -36,6 +36,7 @@
 
 #define DEFAULT_HOMEDIR "/home/user"
 #define CONFIGFILE_LOC "/.config/browser-switchboard"
+#define CONFIGFILE_LOC_OLD "/.config/browser-proxy"
 #define MAXLINE 1024
 
 struct swb_context ctx;
@@ -73,8 +74,14 @@ static void read_config(int signalnum) {
 		goto out_noopen;
 	snprintf(configfile, len, "%s%s", homedir, CONFIGFILE_LOC);
 
-	if (!(fp = fopen(configfile, "r")))
-		goto out_noopen;
+	if (!(fp = fopen(configfile, "r"))) {
+		/* Try the legacy config file location before giving up
+		   XXX we assume here that CONFIGFILE_LOC_OLD is shorter
+		   than CONFIGFILE_LOC! */
+		snprintf(configfile, len, "%s%s", homedir, CONFIGFILE_LOC_OLD);
+		if (!(fp = fopen(configfile, "r")))
+			goto out_noopen;
+	}
 
 	/* compile regex matching blank lines or comments */
 	if (regcomp(&re_ignore, "^[[:space:]]*(#|$)", REG_EXTENDED|REG_NOSUB))

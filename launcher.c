@@ -84,6 +84,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	if (!uri)
 		uri = "new_window";
 
+	printf("launch_microb with uri '%s'\n", uri);
+
 	/* Launch browserd if it's not running */
 	status = system("pidof /usr/sbin/browserd > /dev/null");
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
@@ -135,8 +137,10 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 
 	if (!uri || !strcmp(uri, "new_window"))
 		uri = "";
-	urilen = strlen(uri);
-	if (urilen > 0) {
+
+	printf("launch_other_browser with uri '%s'\n", uri);
+
+	if ((urilen = strlen(uri)) > 0) {
 		/* Quote the URI to prevent the shell from interpreting it */
 		/* urilen+3 = length of URI + 2x \' + \0 */
 		if (!(quoted_uri = calloc(urilen+3, sizeof(char))))

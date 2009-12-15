@@ -49,7 +49,8 @@ strip: $(PLUGIN)
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/share/hildon-control-panel
-	install -c -m 0755 $(PLUGIN) $(DESTDIR)$(PREFIX)/share/hildon-control-panel
+	install -c -m 0755 $(PLUGIN) $(DESTDIR)$(PREFIX)/lib/hildon-control-panel
+	install -c -m 0644 $(APP).desktop $(DESTDIR)$(PREFIX)/share/applications/hildon-control-panel
 
 clean:
 	rm -f $(APP) $(HILDON_APP) $(PLUGIN) *.o

@@ -1,0 +1,9 @@
+[Desktop Entry] 
+Encoding=UTF-8
+Version=1.0
+Name=Browser Switchboard
+Comment=Set the default browser
+Type=HildonControlPanelPlugin
+Icon=qgn_list_cp_dev_network
+X-control-panel-plugin=libbrowser-switchboard-cp.so
+Categories=personalisation

@@ -67,6 +67,7 @@ static void read_config(int signalnum) {
 
 	set_config_defaults(&ctx);
 
+	/* Put together the path to the config file */
 	if (!(homedir = getenv("HOME")))
 		homedir = DEFAULT_HOMEDIR;
 	len = strlen(homedir) + strlen(CONFIGFILE_LOC) + 1;
@@ -74,6 +75,7 @@ static void read_config(int signalnum) {
 		goto out_noopen;
 	snprintf(configfile, len, "%s%s", homedir, CONFIGFILE_LOC);
 
+	/* Try to open the config file */
 	if (!(fp = fopen(configfile, "r"))) {
 		/* Try the legacy config file location before giving up
 		   XXX we assume here that CONFIGFILE_LOC_OLD is shorter
@@ -174,16 +176,19 @@ int main() {
 	read_config(0);
 
 	if (ctx.continuous_mode) {
+		/* Install signal handlers */
 		struct sigaction act;
 		act.sa_flags = SA_RESTART;
 		sigemptyset(&(act.sa_mask));
 
+		/* SIGCHLD -- clean up after zombies */
 		act.sa_handler = waitforzombies;
 		if (sigaction(SIGCHLD, &act, NULL) == -1) {
 			printf("Installing signal handler failed\n");
 			return 1;
 		}
 
+		/* SIGHUP -- reread config file */
 		act.sa_handler = read_config;
 		if (sigaction(SIGHUP, &act, NULL) == -1) {
 			printf("Installing signal handler failed\n");
@@ -196,6 +201,7 @@ int main() {
 	dbus_g_object_type_install_info(OSSO_BROWSER_TYPE,
 			&dbus_glib_osso_browser_object_info);
 
+	/* Get a connection to the D-Bus session bus */
 	ctx.session_bus = dbus_g_bus_get(DBUS_BUS_SESSION, &error);
 	if (!ctx.session_bus) {
 		printf("Couldn't get a D-Bus bus connection\n");
@@ -211,6 +217,7 @@ int main() {
 
 	dbus_request_osso_browser_name(&ctx);
 
+	/* Register ourselves to handle the osso_browser D-Bus methods */
 	obj_osso_browser = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	obj_osso_browser_req = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	dbus_g_connection_register_g_object(ctx.session_bus,

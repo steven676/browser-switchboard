@@ -46,6 +46,12 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 
 	printf("launch_tear with uri '%s'\n", uri);
 
+	/* We should be able to just call the D-Bus service to open Tear ...
+	   but if Tear's not open, that cuases D-Bus to star Tear and then pass
+	   it the OpenAddress call, which results in two browser windows.
+	   Properly fixing this probably requires Tear to provide a D-Bus
+	   method that opens an address in an existing window, but for now work
+	   around by just invoking Tear with exec() if it's not running. */
 	status = system("pidof tear > /dev/null");
 	if (WIFEXITED(status) && !WEXITSTATUS(status)) {
 		if (!tear_proxy)
@@ -78,12 +84,14 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	if (!uri)
 		uri = "new_window";
 
+	/* Launch browserd if it's not running */
 	status = system("pidof /usr/sbin/browserd > /dev/null");
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
 		kill_browserd = 1;
 		system("/usr/sbin/browserd -d");
 	}
 
+	/* Release the osso_browser D-Bus name so that MicroB can take it */
 	dbus_release_osso_browser_name(ctx);
 
 	if ((pid = fork()) == -1) {
@@ -95,6 +103,9 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		waitpid(pid, &status, 0);
 	} else {
 		/* Child process */
+		/* exec maemo-invoker directly instead of relying on the
+		   /usr/bin/browser symlink, since /usr/bin/browser may have
+		   been replaced with a shell script calling us via D-Bus */
 		if (!strcmp(uri, "new_window")) {
 			execl("/usr/bin/maemo-invoker",
 			      "browser", (char *)NULL);
@@ -104,6 +115,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		}
 	}
 
+	/* Kill off browserd if we started it */
 	if (kill_browserd)
 		system("kill `pidof /usr/sbin/browserd`");
 
@@ -125,7 +137,7 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 		uri = "";
 	urilen = strlen(uri);
 	if (urilen > 0) {
-		/* Quote the URI */
+		/* Quote the URI to prevent the shell from interpreting it */
 		/* urilen+3 = length of URI + 2x \' + \0 */
 		if (!(quoted_uri = calloc(urilen+3, sizeof(char))))
 			exit(1);
@@ -187,6 +199,10 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 	execl("/bin/sh", "/bin/sh", "-c", command, (char *)NULL);
 }
 
+/* Use launch_other_browser as the default browser launcher, with the string
+   passed in as the other_browser_cmd
+   Resulting other_browser_cmd is always safe to free(), even if a pointer
+   to a string constant is passed in */
 static void use_other_browser_cmd(struct swb_context *ctx, char *cmd) {
 	size_t len = strlen(cmd);
 
@@ -221,6 +237,8 @@ void update_default_browser(struct swb_context *ctx, char *default_browser) {
 	else if (!strcmp(default_browser, "microb"))
 		ctx->default_browser_launcher = launch_microb;
 	else if (!strcmp(default_browser, "fennec"))
+		/* Cheat and reuse launch_other_browser, since we don't appear
+		   to need to do anything special */
 		use_other_browser_cmd(ctx, "fennec %s");
 	else if (!strcmp(default_browser, "midori"))
 		use_other_browser_cmd(ctx, "midori %s");

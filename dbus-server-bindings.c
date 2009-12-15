@@ -51,7 +51,10 @@ static void open_address(const char *uri) {
 		/* Not much to do in this case ... */
 		return;
 
+	printf("open_address '%s'\n", uri);
 	if (uri[0] == '/') {
+		/* URI begins with a '/' -- assume it points to a local file
+		   and prefix with "file://" */
 		new_uri_len = strlen("file://") + strlen(uri) + 1;
 		if (!(new_uri = calloc(new_uri_len, sizeof(char))))
 			exit(1);
@@ -62,7 +65,6 @@ static void open_address(const char *uri) {
 		   we need to clean up after ourselves */
 		free(new_uri);
 	} else {
-		printf("open_address '%s'\n", uri);
 		launch_browser(&ctx, (char *)uri);
 	}
 }

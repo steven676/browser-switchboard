@@ -32,6 +32,7 @@
 #include "launcher.h"
 #include "dbus-server-bindings.h"
 
+#define DEFAULT_BROWSER "/usr/bin/tear"
 #define LAUNCH_DEFAULT_BROWSER launch_tear
 
 static void launch_tear(struct swb_context *ctx, char *uri) {
@@ -206,7 +207,12 @@ void update_default_browser(struct swb_context *ctx, char *default_browser) {
 		return;
 
 	if (!default_browser) {
-		ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
+		/* No default_browser configured -- use DEFAULT_BROWSER if
+		   installed, otherwise launch MicroB */
+		if (!access(DEFAULT_BROWSER, X_OK))
+			ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
+		else
+			ctx->default_browser_launcher = launch_microb;
 		return;
 	}
 

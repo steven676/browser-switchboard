@@ -1,20 +1,27 @@
 CC = gcc
 CFLAGS = -Wall -Os -mcpu=arm1136jf-s -mthumb
-CFLAGS_LIB = -fPIC
+CFLAGS_PLUGIN = -fPIC
 CPPFLAGS = `pkg-config --cflags gtk+-2.0`
-CPPFLAGS_LIB = -DHILDON -DHILDON_CP_APPLET
+CPPFLAGS_HILDON = -DHILDON `pkg-config --cflags hildon-1`
+CPPFLAGS_PLUGIN = $(CPPFLAGS_HILDON) -DHILDON_CP_APPLET \
+	`pkg-config --cflags dbus-1` `pkg-config --cflags hildon-control-panel`
 LDFLAGS = `pkg-config --libs gtk+-2.0`
-LDFLAGS_LIB = -shared
+LDFLAGS_HILDON = `pkg-config --libs hildon-1`
+LDFLAGS_PLUGIN = -shared $(LDFLAGS_HILDON) \
+	`pkg-config --libs dbus-1` `pkg-config --libs hildon-control-panel`
 PREFIX = /usr/local
 
 APP = browser-switchboard-cp
 app_obj = $(APP).app.o
-LIB = lib$(APP).so
-lib_obj = $(APP).lib.o
+HILDON_APP = $(APP)-hildon
+happ_obj = $(APP).happ.o
+PLUGIN = lib$(APP).so
+plugin_obj = $(APP).plugin.o
 
-all: $(LIB)
-lib: $(LIB)
+all: plugin
+plugin: $(PLUGIN)
 app: $(APP)
+hildon-app: $(HILDON_APP)
 
 $(APP): $(app_obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(APP) $(app_obj)
@@ -22,20 +29,29 @@ $(APP): $(app_obj)
 %.app.o: %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-$(LIB): $(lib_obj)
-	$(CC) $(CFLAGS) $(CFLAGS_LIB) $(LDFLAGS) $(LDFLAGS_LIB) -o $(LIB) $(lib_obj)
+$(HILDON_APP): $(happ_obj)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LDFLAGS_HILDON) \
+		-o $(HILDON_APP) $(happ_obj)
 
-%.lib.o: %.c
-	$(CC) $(CFLAGS) $(CFLAGS_LIB) $(CPPFLAGS) $(CPPFLAGS_LIB) -c -o $@ $<
+%.happ.o: %.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_HILDON) -c -o $@ $<
 
-strip: $(LIB)
-	strip $(LIB)
+$(PLUGIN): $(plugin_obj)
+	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) $(LDFLAGS) $(LDFLAGS_PLUGIN) \
+		-o $(PLUGIN) $(plugin_obj)
+
+%.plugin.o: %.c
+	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) $(CPPFLAGS) $(CPPFLAGS_PLUGIN) \
+		-c -o $@ $<
+
+strip: $(PLUGIN)
+	strip $(PLUGIN)
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/share/hildon-control-panel
-	install -c -m 0755 $(LIB) $(DESTDIR)$(PREFIX)/share/hildon-control-panel
+	install -c -m 0755 $(PLUGIN) $(DESTDIR)$(PREFIX)/share/hildon-control-panel
 
 clean:
-	rm -f $(APP) $(LIB) *.o
+	rm -f $(APP) $(HILDON_APP) $(PLUGIN) *.o
 
-.PHONY: strip install lib app
+.PHONY: strip install plugin app hildon-app

@@ -216,7 +216,6 @@ osso_return_t execute(osso_context_t * osso,
 	
 	if (osso == NULL)
 		return OSSO_ERROR;
-	data.osso_context = osso;
 
 	/* enable help system on dialog */
 	GtkDialog * dialog = GTK_DIALOG(swb_config_dialog());

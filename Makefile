@@ -5,7 +5,7 @@ LDFLAGS = `pkg-config --libs dbus-glib-1`
 PREFIX = /usr/local
 
 APP = browser-switchboard
-obj = main.o launcher.o dbus-server-bindings.o
+obj = main.o launcher.o dbus-server-bindings.o configfile.o
 
 all: $(APP)
 

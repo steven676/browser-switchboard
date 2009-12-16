@@ -33,11 +33,7 @@
 #include "browser-switchboard.h"
 #include "launcher.h"
 #include "dbus-server-bindings.h"
-
-#define DEFAULT_HOMEDIR "/home/user"
-#define CONFIGFILE_LOC "/.config/browser-switchboard"
-#define CONFIGFILE_LOC_OLD "/.config/browser-proxy"
-#define MAXLINE 1024
+#include "configfile.h"
 
 struct swb_context ctx;
 
@@ -56,51 +52,31 @@ static void waitforzombies(int signalnum) {
 }
 
 static void read_config(int signalnum) {
-	char *homedir, *configfile;
-	size_t len;
-	char buf[MAXLINE];
-	char *key, *value;
-	char *default_browser = NULL;
 	FILE *fp;
 	regex_t re_ignore, re_config1, re_config2;
 	regmatch_t substrs[3];
+	char buf[MAXLINE];
+	char *key, *value;
+	char *default_browser = NULL;
+	size_t len;
 
 	set_config_defaults(&ctx);
 
-	/* Put together the path to the config file */
-	if (!(homedir = getenv("HOME")))
-		homedir = DEFAULT_HOMEDIR;
-	len = strlen(homedir) + strlen(CONFIGFILE_LOC) + 1;
-	if (!(configfile = calloc(len, sizeof(char))))
+	if (!(fp = open_config_file()))
 		goto out_noopen;
-	snprintf(configfile, len, "%s%s", homedir, CONFIGFILE_LOC);
-
-	/* Try to open the config file */
-	if (!(fp = fopen(configfile, "r"))) {
-		/* Try the legacy config file location before giving up
-		   XXX we assume here that CONFIGFILE_LOC_OLD is shorter
-		   than CONFIGFILE_LOC! */
-		snprintf(configfile, len, "%s%s", homedir, CONFIGFILE_LOC_OLD);
-		if (!(fp = fopen(configfile, "r")))
-			goto out_noopen;
-	}
 
 	/* compile regex matching blank lines or comments */
-	if (regcomp(&re_ignore, "^[[:space:]]*(#|$)", REG_EXTENDED|REG_NOSUB))
+	if (regcomp(&re_ignore, REGEX_IGNORE, REGEX_IGNORE_FLAGS))
 		goto out_nore;
 	/* compile regex matching foo = "bar", with arbitrary whitespace at
 	   beginning and end of line and surrounding the = */
-	if (regcomp(&re_config1,
-		    "^[[:space:]]*([^=[:space:]]+)[[:space:]]*=[[:space:]]*\"(.*)\"[[:space:]]*$",
-		    REG_EXTENDED)) {
+	if (regcomp(&re_config1, REGEX_CONFIG1, REGEX_CONFIG1_FLAGS)) {
 		regfree(&re_ignore);
 		goto out_nore;
 	}
 	/* compile regex matching foo = bar, with arbitrary whitespace at
 	   beginning of line and surrounding the = */
-	if (regcomp(&re_config2,
-		    "^[[:space:]]*([^=[:space:]]+)[[:space:]]*=[[:space:]]*(.*)$",
-		    REG_EXTENDED|REG_NEWLINE)) {
+	if (regcomp(&re_config2, REGEX_CONFIG2, REGEX_CONFIG2_FLAGS)) {
 		regfree(&re_ignore);
 		regfree(&re_config1);
 		goto out_nore;
@@ -163,7 +139,6 @@ out_nore:
 	fclose(fp);
 out_noopen:
 	update_default_browser(&ctx, default_browser);
-	free(configfile);
 	free(default_browser);
 	return;
 }

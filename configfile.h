@@ -26,8 +26,11 @@
 #include <stdio.h>
 
 #define DEFAULT_HOMEDIR "/home/user"
-#define CONFIGFILE_LOC "/.config/browser-switchboard"
-#define CONFIGFILE_LOC_OLD "/.config/browser-proxy"
+#define CONFIGFILE_DIR "/.config/"
+#define CONFIGFILE_NAME "browser-switchboard"
+#define CONFIGFILE_NAME_OLD "browser-proxy"
+#define CONFIGFILE_LOC CONFIGFILE_DIR CONFIGFILE_NAME
+#define CONFIGFILE_LOC_OLD CONFIGFILE_DIR CONFIGFILE_NAME_OLD
 
 struct swb_config_line {
 	/* Whether or not the line has been parsed */

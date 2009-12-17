@@ -306,7 +306,6 @@ static GtkDialog *swb_config_dialog(void) {
 	/* Config options */
 	options_table = gtk_table_new(3, 2, FALSE);
 	gtk_table_set_row_spacings(GTK_TABLE(options_table), 10);
-	gtk_table_set_col_spacings(GTK_TABLE(options_table), 10);
 	gtk_box_pack_start(GTK_BOX(dialog_vbox), options_table, FALSE, FALSE, 0);
 
 	cw.default_browser_combo = gtk_combo_box_new_text();
@@ -323,11 +322,13 @@ static GtkDialog *swb_config_dialog(void) {
 			0, 1,
 			0, 1,
 			GTK_FILL, GTK_FILL|GTK_EXPAND,
-			0, 0);
-	gtk_table_attach_defaults(GTK_TABLE(options_table),
+			5, 0);
+	gtk_table_attach(GTK_TABLE(options_table),
 			cw.default_browser_combo,
 			1, 2,
-			0, 1);
+			0, 1,
+			GTK_FILL|GTK_EXPAND, GTK_FILL|GTK_EXPAND,
+			5, 0);
 	gtk_table_set_row_spacing(GTK_TABLE(options_table), 0, 5);
 
 	cw.other_browser_cmd_entry = gtk_entry_new();
@@ -339,19 +340,22 @@ static GtkDialog *swb_config_dialog(void) {
 			cw.other_browser_cmd_entry_label,
 			0, 1,
 			1, 2,
-			0, GTK_FILL|GTK_EXPAND,
-			0, 0);
-	gtk_table_attach_defaults(GTK_TABLE(options_table),
+			GTK_FILL, GTK_FILL|GTK_EXPAND,
+			5, 0);
+	gtk_table_attach(GTK_TABLE(options_table),
 			cw.other_browser_cmd_entry,
 			1, 2,
-			1, 2);
+			1, 2,
+			GTK_FILL|GTK_EXPAND, GTK_FILL|GTK_EXPAND,
+			5, 0);
 
 	cw.continuous_mode_check = gtk_check_button_new_with_label("Run browser launcher continuously in the background");
-	gtk_table_attach_defaults(GTK_TABLE(options_table),
+	gtk_table_attach(GTK_TABLE(options_table),
 			cw.continuous_mode_check,
 			0, 2,
-			2, 3);
-
+			2, 3,
+			0, GTK_FILL|GTK_EXPAND,
+			5, 5);
 
 	/* Dialog buttons */
 	action_area = GTK_DIALOG(dialog)->action_area;

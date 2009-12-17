@@ -76,7 +76,7 @@ static inline void set_continuous_mode(int state) {
 	return gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cw.continuous_mode_check), (gboolean)state);
 }
 
-static inline char * get_default_browser(void) {
+static inline char *get_default_browser(void) {
 	return browsers[gtk_combo_box_get_active(GTK_COMBO_BOX(cw.default_browser_combo))].config;
 }
 static void set_default_browser(char *browser) {
@@ -93,7 +93,7 @@ static void set_default_browser(char *browser) {
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cw.default_browser_combo), i);
 }
 
-static inline char * get_other_browser_cmd(void) {
+static inline char *get_other_browser_cmd(void) {
 	return (char *)gtk_entry_get_text(GTK_ENTRY(cw.other_browser_cmd_entry));
 }
 static inline void set_other_browser_cmd(char *cmd) {
@@ -274,7 +274,7 @@ static void cancel_callback(GtkWidget *widget, gpointer data) {
  * Interface
  **********************************************************************/
 
-static GtkDialog * swb_config_dialog(void) {
+static GtkDialog *swb_config_dialog(void) {
 	GtkWidget *dialog_vbox;
 
 	GtkWidget *options_table;
@@ -367,20 +367,17 @@ static GtkDialog * swb_config_dialog(void) {
 /*
  * Application was started from control panel.
  */
-osso_return_t execute(osso_context_t * osso,
-		      gpointer userdata, gboolean user_activated)
-{
+osso_return_t execute(osso_context_t *osso,
+		      gpointer userdata, gboolean user_activated) {
 	HildonProgram *program;
+	GtkDialog *dialog;
+
 	program = HILDON_PROGRAM(hildon_program_get_instance());
-	
 	if (osso == NULL)
 		return OSSO_ERROR;
 
-	/* enable help system on dialog */
-	GtkDialog * dialog = GTK_DIALOG(swb_config_dialog());
-
+	dialog = GTK_DIALOG(swb_config_dialog());
 	load_config();
-
 	gtk_dialog_run(dialog);
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 
@@ -390,8 +387,7 @@ osso_return_t execute(osso_context_t * osso,
 /*
  * Application was started from command line.
  */
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	GtkDialog *dialog;
 #ifdef HILDON
 	HildonProgram *program = NULL;

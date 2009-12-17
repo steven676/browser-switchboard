@@ -435,10 +435,12 @@ int main(int argc, char *argv[]) {
 	GtkDialog *dialog;
 #ifdef HILDON
 	HildonProgram *program = NULL;
-	program = HILDON_PROGRAM(hildon_program_get_instance());
 #endif
 
 	gtk_init(&argc, &argv);
+#ifdef HILDON
+	program = HILDON_PROGRAM(hildon_program_get_instance());
+#endif
 
 	g_set_application_name("Browser Switchboard");
 

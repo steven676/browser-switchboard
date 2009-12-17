@@ -143,7 +143,6 @@ int parse_config_file_line(FILE *fp, struct swb_config_line *line) {
 		else
 			return -1;
 	}
-	printf("%s", line->key);
 
 	/* no need to parse blank lines and comments */
 	if (!regexec(&re_ignore, line->key, 0, NULL, 0))
@@ -177,7 +176,6 @@ int parse_config_file_line(FILE *fp, struct swb_config_line *line) {
 
 	/* done parsing the line */
 	line->parsed = 1;
-	printf("%s: '%s'\n", line->key, line->value);
 
 finish:
 	if (!line->parsed) {

@@ -28,6 +28,22 @@
 
 #include "configfile.h"
 
+#define MAXLINE 1024
+
+/* regex matching blank lines or comments */
+#define REGEX_IGNORE "^[[:space:]]*(#|$)"
+#define REGEX_IGNORE_FLAGS REG_EXTENDED|REG_NOSUB
+
+/* regex matching foo = "bar", with arbitrary whitespace at beginning and end
+   of line and surrounding the = */
+#define REGEX_CONFIG1 "^[[:space:]]*([^=[:space:]]+)[[:space:]]*=[[:space:]]*\"(.*)\"[[:space:]]*$"
+#define REGEX_CONFIG1_FLAGS REG_EXTENDED
+
+/* regex matching foo = bar, with arbitrary whitespace at beginning of line and
+   surrounding the = */
+#define REGEX_CONFIG2 "^[[:space:]]*([^=[:space:]]+)[[:space:]]*=[[:space:]]*(.*)$"
+#define REGEX_CONFIG2_FLAGS REG_EXTENDED|REG_NEWLINE
+
 static regex_t re_ignore, re_config1, re_config2;
 static int re_init = 0;
 

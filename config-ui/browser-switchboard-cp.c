@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gtk/gtk.h>
@@ -152,9 +153,19 @@ static void save_config(void) {
 	int other_browser_cmd_seen = 0;
 	struct swb_config_line line;
 
-	/* Put together the path to the new config file and the tempfile */
+	/* If CONFIGFILE_DIR doesn't exist already, try to create it */
 	if (!(homedir = getenv("HOME")))
 		homedir = DEFAULT_HOMEDIR;
+	len = strlen(homedir) + strlen(CONFIGFILE_DIR) + 1;
+	if (!(newfile = calloc(len, sizeof(char))))
+		return;
+	snprintf(newfile, len, "%s%s", homedir, CONFIGFILE_DIR);
+	if (access(newfile, F_OK) == -1 && errno == ENOENT) {
+		mkdir(newfile, 0750);
+	}
+	free(newfile);
+
+	/* Put together the path to the new config file and the tempfile */
 	len = strlen(homedir) + strlen(CONFIGFILE_LOC) + 1;
 	if (!(newfile = calloc(len, sizeof(char))))
 		return;

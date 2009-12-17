@@ -303,7 +303,7 @@ static GtkDialog *swb_config_dialog(void) {
 					  browsers[i].displayname);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cw.default_browser_combo), 0);
 	default_browser_combo_label = gtk_label_new("Default browser:");
-	gtk_misc_set_alignment(GTK_MISC(default_browser_combo_label), 0, 0.5);
+	gtk_misc_set_alignment(GTK_MISC(default_browser_combo_label), 1, 0.5);
 	g_signal_connect(G_OBJECT(cw.default_browser_combo), "changed",
 			 G_CALLBACK(default_browser_combo_callback), NULL);
 	gtk_table_attach(GTK_TABLE(options_table),
@@ -320,7 +320,7 @@ static GtkDialog *swb_config_dialog(void) {
 
 	cw.other_browser_cmd_entry = gtk_entry_new();
 	cw.other_browser_cmd_entry_label = gtk_label_new("Command (%s for URI):");
-	gtk_misc_set_alignment(GTK_MISC(cw.other_browser_cmd_entry_label), 0, 0.5);
+	gtk_misc_set_alignment(GTK_MISC(cw.other_browser_cmd_entry_label), 1, 0.5);
 	gtk_widget_set_sensitive(cw.other_browser_cmd_entry, FALSE);
 	gtk_widget_set_sensitive(cw.other_browser_cmd_entry_label, FALSE);
 	gtk_table_attach(GTK_TABLE(options_table),

@@ -257,6 +257,13 @@ out:
 	return;
 }
 
+static void do_reconfig(void) {
+	save_config();
+
+	/* TODO: send HUP to browser-switchboard */
+}
+
+
 /**********************************************************************
  * Callbacks
  **********************************************************************/
@@ -271,27 +278,12 @@ static void default_browser_combo_callback(GtkWidget *widget, gpointer data) {
 	}
 }
 
-static inline void close_dialog(void) {
-	gtk_dialog_response(GTK_DIALOG(dialog), GTK_RESPONSE_NONE);
-}
-
-static void ok_callback(GtkWidget *widget, gpointer data) {
-	save_config();
-	/* TODO: is there any cleanup necessary? */
-	close_dialog();
-}
-
-static void cancel_callback(GtkWidget *widget, gpointer data) {
-	/* TODO: is there any cleanup necessary? */
-	close_dialog();
-}
-
 
 /**********************************************************************
  * Interface
  **********************************************************************/
 
-static GtkDialog *swb_config_dialog(void) {
+static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	GtkWidget *dialog_vbox;
 
 	GtkWidget *options_table;
@@ -299,14 +291,15 @@ static GtkDialog *swb_config_dialog(void) {
 	GtkWidget *continuous_mode_label;
 	int i;
 
-	GtkWidget *action_area;
-	GtkWidget *okbutton, *cancelbutton;
-
-	dialog = gtk_dialog_new();
-	/* Doesn't seem to be necessary?
-	   gtk_widget_set_size_request(GTK_WIDGET(dialog), 580, 180); */
-	gtk_window_set_title (GTK_WINDOW(dialog), "Browser Switchboard");
-	gtk_window_set_type_hint (GTK_WINDOW(dialog), GDK_WINDOW_TYPE_HINT_DIALOG);
+	dialog = gtk_dialog_new_with_buttons(
+		"Browser Switchboard",
+		GTK_WINDOW(cp_window),
+		GTK_DIALOG_MODAL,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		GTK_STOCK_CANCEL,
+		GTK_RESPONSE_CANCEL,
+		NULL);
 
 	dialog_vbox = GTK_DIALOG(dialog)->vbox;
 
@@ -385,19 +378,6 @@ static GtkDialog *swb_config_dialog(void) {
 	gtk_table_set_row_spacing(GTK_TABLE(options_table), 3, 0);
 
 
-	/* Dialog buttons */
-	action_area = GTK_DIALOG(dialog)->action_area;
-
-	okbutton = gtk_button_new_from_stock(GTK_STOCK_OK);
-	g_signal_connect(G_OBJECT(okbutton), "clicked",
-			 G_CALLBACK(ok_callback), NULL);
-	gtk_box_pack_start(GTK_BOX(action_area), okbutton, FALSE, FALSE, 0);
-
-	cancelbutton = gtk_button_new_from_stock(GTK_STOCK_CANCEL);
-	g_signal_connect(G_OBJECT(cancelbutton), "clicked",
-			 G_CALLBACK(cancel_callback), NULL);
-	gtk_box_pack_start(GTK_BOX(action_area), cancelbutton, FALSE, FALSE, 0);
-
 	gtk_widget_show_all(dialog);
 	return GTK_DIALOG(dialog);
 }
@@ -413,16 +393,19 @@ static GtkDialog *swb_config_dialog(void) {
  */
 osso_return_t execute(osso_context_t *osso,
 		      gpointer userdata, gboolean user_activated) {
-	HildonProgram *program;
 	GtkDialog *dialog;
+	gint response;
 
-	program = HILDON_PROGRAM(hildon_program_get_instance());
 	if (osso == NULL)
 		return OSSO_ERROR;
 
-	dialog = GTK_DIALOG(swb_config_dialog());
+	dialog = GTK_DIALOG(swb_config_dialog(userdata));
 	load_config();
-	gtk_dialog_run(dialog);
+
+	response = gtk_dialog_run(dialog);
+	if (response == GTK_RESPONSE_OK)
+		do_reconfig();
+
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 
 	return OSSO_OK;
@@ -433,6 +416,7 @@ osso_return_t execute(osso_context_t *osso,
  */
 int main(int argc, char *argv[]) {
 	GtkDialog *dialog;
+	gint response;
 #ifdef HILDON
 	HildonProgram *program = NULL;
 #endif
@@ -444,9 +428,13 @@ int main(int argc, char *argv[]) {
 
 	g_set_application_name("Browser Switchboard");
 
-	dialog = GTK_DIALOG(swb_config_dialog());
+	dialog = GTK_DIALOG(swb_config_dialog(NULL));
 	load_config();
-	gtk_dialog_run(dialog);
+
+	response = gtk_dialog_run(dialog);
+	if (response == GTK_RESPONSE_OK)
+		do_reconfig();
+
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 
 	exit(0);

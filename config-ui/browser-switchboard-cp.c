@@ -43,6 +43,8 @@
 
 #include "configfile.h"
 
+#define CONTINUOUS_MODE_DEFAULT 0
+
 struct browser_entry {
 	char *config;
 	char *displayname;
@@ -57,7 +59,8 @@ struct browser_entry browsers[] = {
 };
 
 struct config_widgets {
-	GtkWidget *continuous_mode_check;
+	GtkWidget *continuous_mode_off_radio;
+	GtkWidget *continuous_mode_on_radio;
 	GtkWidget *default_browser_combo;
 	GtkWidget *other_browser_cmd_entry;
 	GtkWidget *other_browser_cmd_entry_label;
@@ -71,10 +74,13 @@ GtkWidget *dialog;
  **********************************************************************/
 
 static inline int get_continuous_mode(void) {
-	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cw.continuous_mode_check));
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cw.continuous_mode_on_radio));
 }
 static inline void set_continuous_mode(int state) {
-	return gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cw.continuous_mode_check), (gboolean)state);
+	if (state)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cw.continuous_mode_on_radio), TRUE);
+	else
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cw.continuous_mode_off_radio), TRUE);
 }
 
 static inline char *get_default_browser(void) {
@@ -290,6 +296,7 @@ static GtkDialog *swb_config_dialog(void) {
 
 	GtkWidget *options_table;
 	GtkWidget *default_browser_combo_label;
+	GtkWidget *continuous_mode_label;
 	int i;
 
 	GtkWidget *action_area;
@@ -305,7 +312,7 @@ static GtkDialog *swb_config_dialog(void) {
 
 	/* Config options */
 	options_table = gtk_table_new(3, 2, FALSE);
-	gtk_table_set_row_spacings(GTK_TABLE(options_table), 10);
+	gtk_table_set_row_spacings(GTK_TABLE(options_table), 5);
 	gtk_box_pack_start(GTK_BOX(dialog_vbox), options_table, FALSE, FALSE, 0);
 
 	cw.default_browser_combo = gtk_combo_box_new_text();
@@ -329,7 +336,6 @@ static GtkDialog *swb_config_dialog(void) {
 			0, 1,
 			GTK_FILL|GTK_EXPAND, GTK_FILL|GTK_EXPAND,
 			5, 0);
-	gtk_table_set_row_spacing(GTK_TABLE(options_table), 0, 5);
 
 	cw.other_browser_cmd_entry = gtk_entry_new();
 	cw.other_browser_cmd_entry_label = gtk_label_new("Command (%s for URI):");
@@ -348,14 +354,36 @@ static GtkDialog *swb_config_dialog(void) {
 			1, 2,
 			GTK_FILL|GTK_EXPAND, GTK_FILL|GTK_EXPAND,
 			5, 0);
+	gtk_table_set_row_spacing(GTK_TABLE(options_table), 1, 15);
 
-	cw.continuous_mode_check = gtk_check_button_new_with_label("Run browser launcher continuously in the background");
+	continuous_mode_label = gtk_label_new("Optimize Browser Switchboard for:");
+	gtk_misc_set_alignment(GTK_MISC(continuous_mode_label), 0, 0.5);
+	cw.continuous_mode_off_radio = gtk_radio_button_new_with_label(NULL,
+			"Lower memory usage");
+	cw.continuous_mode_on_radio = gtk_radio_button_new_with_label_from_widget(
+			GTK_RADIO_BUTTON(cw.continuous_mode_off_radio),
+			"Faster browser startup time");
+	set_continuous_mode(CONTINUOUS_MODE_DEFAULT);
 	gtk_table_attach(GTK_TABLE(options_table),
-			cw.continuous_mode_check,
+			continuous_mode_label,
 			0, 2,
 			2, 3,
-			0, GTK_FILL|GTK_EXPAND,
-			5, 5);
+			GTK_FILL, GTK_FILL|GTK_EXPAND,
+			5, 0);
+	gtk_table_attach(GTK_TABLE(options_table),
+			cw.continuous_mode_off_radio,
+			0, 2,
+			3, 4,
+			GTK_FILL, GTK_FILL|GTK_EXPAND,
+			20, 0);
+	gtk_table_attach(GTK_TABLE(options_table),
+			cw.continuous_mode_on_radio,
+			0, 2,
+			4, 5,
+			GTK_FILL, GTK_FILL|GTK_EXPAND,
+			20, 5);
+	gtk_table_set_row_spacing(GTK_TABLE(options_table), 3, 0);
+
 
 	/* Dialog buttons */
 	action_area = GTK_DIALOG(dialog)->action_area;

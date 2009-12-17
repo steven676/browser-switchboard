@@ -23,11 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <regex.h>
 #include <dbus/dbus-glib.h>
 
 #include "browser-switchboard.h"

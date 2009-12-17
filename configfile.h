@@ -47,6 +47,19 @@
 #define REGEX_CONFIG2_FLAGS REG_EXTENDED|REG_NEWLINE
 
 
+struct swb_config_line {
+	/* Whether or not the line has been parsed */
+	int parsed;
+	/* If parsed, the config key; otherwise, the entire line */
+	char *key;
+	/* If parsed, the config value */
+	char *value;
+};
+
 FILE *open_config_file(void);
+
+int parse_config_file_begin(void);
+void parse_config_file_end(void);
+int parse_config_file_line(FILE *fp, struct swb_config_line *line);
 
 #endif /* _CONFIGFILE_H */

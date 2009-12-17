@@ -53,89 +53,47 @@ static void waitforzombies(int signalnum) {
 
 static void read_config(int signalnum) {
 	FILE *fp;
-	regex_t re_ignore, re_config1, re_config2;
-	regmatch_t substrs[3];
-	char buf[MAXLINE];
-	char *key, *value;
+	int continuous_mode_seen = 0;
+	struct swb_config_line line;
 	char *default_browser = NULL;
-	size_t len;
 
 	set_config_defaults(&ctx);
 
 	if (!(fp = open_config_file()))
 		goto out_noopen;
 
-	/* compile regex matching blank lines or comments */
-	if (regcomp(&re_ignore, REGEX_IGNORE, REGEX_IGNORE_FLAGS))
-		goto out_nore;
-	/* compile regex matching foo = "bar", with arbitrary whitespace at
-	   beginning and end of line and surrounding the = */
-	if (regcomp(&re_config1, REGEX_CONFIG1, REGEX_CONFIG1_FLAGS)) {
-		regfree(&re_ignore);
-		goto out_nore;
-	}
-	/* compile regex matching foo = bar, with arbitrary whitespace at
-	   beginning of line and surrounding the = */
-	if (regcomp(&re_config2, REGEX_CONFIG2, REGEX_CONFIG2_FLAGS)) {
-		regfree(&re_ignore);
-		regfree(&re_config1);
-		goto out_nore;
-	}
-
-	/* Read in the config file one line at a time and parse it
-	   XXX doesn't deal with lines longer than MAXLINE */
-	while (fgets(buf, MAXLINE, fp)) {
-		/* skip blank lines and comments */
-		if (!regexec(&re_ignore, buf, 0, NULL, 0))
-			continue;
-
-		/* Find the substrings corresponding to the key and value
-		   If the line doesn't match our idea of a config file entry,
-		   skip it */
-		if (regexec(&re_config1, buf, 3, substrs, 0) &&
-		    regexec(&re_config2, buf, 3, substrs, 0))
-			continue;
-		if (substrs[1].rm_so == -1 || substrs[2].rm_so == -1)
-			continue;
-
-		/* copy the config value into a new string */
-		len = substrs[2].rm_eo - substrs[2].rm_so;
-		if (!(value = calloc(len+1, sizeof(char))))
-			goto out;
-		strncpy(value, buf+substrs[2].rm_so, len);
-		/* calloc() zeroes the memory, so string is automatically
-		   null terminated */
-
-		/* make key point to a null-terminated string holding the 
-		   config key */
-		key = buf + substrs[1].rm_so;
-		buf[substrs[1].rm_eo] = '\0';
-
-		if (!strcmp(key, "continuous_mode")) {
-			ctx.continuous_mode = atoi(value);
-			free(value);
-		} else if (!strcmp(key, "default_browser")) {
-			if (!default_browser)
-				default_browser = value;
-		} else if (!strcmp(key, "other_browser_cmd")) {
-			if (!ctx.other_browser_cmd)
-				ctx.other_browser_cmd = value;
-		} else {
-			/* Don't need this line's contents */
-			free(value);
+	/* Parse the config file
+	   TODO: should we handle errors differently than EOF? */
+	if (!parse_config_file_begin())
+		goto out;
+	while (!parse_config_file_line(fp, &line)) {
+		if (line.parsed) {
+			if (!strcmp(line.key, "continuous_mode")) {
+				if (!continuous_mode_seen) {
+					ctx.continuous_mode = atoi(line.value);
+					continuous_mode_seen = 1;
+				}
+				free(line.value);
+			} else if (!strcmp(line.key, "default_browser")) {
+				if (!default_browser)
+					default_browser = line.value;
+			} else if (!strcmp(line.key, "other_browser_cmd")) {
+				if (!ctx.other_browser_cmd)
+					ctx.other_browser_cmd = line.value;
+			} else {
+				/* Don't need this line's contents */
+				free(line.value);
+			}
 		}
-		value = NULL;
+		free(line.key);
 	}
+	parse_config_file_end();
 
 	printf("continuous_mode: %d\n", ctx.continuous_mode);
 	printf("default_browser: '%s'\n", default_browser?default_browser:"NULL");
 	printf("other_browser_cmd: '%s'\n", ctx.other_browser_cmd?ctx.other_browser_cmd:"NULL");
 
 out:
-	regfree(&re_ignore);
-	regfree(&re_config1);
-	regfree(&re_config2);
-out_nore:
 	fclose(fp);
 out_noopen:
 	update_default_browser(&ctx, default_browser);

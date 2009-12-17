@@ -260,7 +260,10 @@ out:
 static void do_reconfig(void) {
 	save_config();
 
-	/* TODO: send HUP to browser-switchboard */
+	/* Try to send SIGHUP to any running browser-switchboard process
+	   This causes it to reread config files if in continuous_mode, and
+	   die so that the config will be reloaded on next start otherwise */
+	system("kill -HUP `busybox ps | fgrep 'python /usr/bin/browser-switchboard' | fgrep -v grep | awk '{ print $1 }'` > /dev/null 2>&1");
 }
 
 

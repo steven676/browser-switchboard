@@ -111,6 +111,7 @@ void parse_config_file_end(void) {
 	regfree(&re_ignore);
 	regfree(&re_config1);
 	regfree(&re_config2);
+	re_init = 0;
 }
 
 /* Read the next line from a config file and store it into a swb_config_line,

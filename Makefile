@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Os
 CPPFLAGS = `pkg-config --cflags dbus-glib-1`
 LDFLAGS = `pkg-config --libs dbus-glib-1`
-PREFIX = /usr/local
+PREFIX = /usr
 
 APP = browser-switchboard
 obj = main.o launcher.o dbus-server-bindings.o configfile.o

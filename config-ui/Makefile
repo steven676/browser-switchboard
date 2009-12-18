@@ -9,7 +9,7 @@ LDFLAGS = `pkg-config --libs gtk+-2.0`
 LDFLAGS_HILDON = `pkg-config --libs hildon-1`
 LDFLAGS_PLUGIN = -shared $(LDFLAGS_HILDON) \
 	`pkg-config --libs dbus-1` `pkg-config --libs hildon-control-panel`
-PREFIX = /usr/local
+PREFIX = /usr
 
 other_obj = ../configfile.o
 

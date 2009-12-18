@@ -1,3 +1,13 @@
+version 3.0rc1:
+* reimplement the main browser-switchboard process in C, which leads to much
+  faster startup times and much lower memory usage
+* implement a configuration UI, which can be used as a standalone app or as a
+  hildon-control-panel applet
+* default to launching MicroB if no config file is found -- with a config UI,
+  it's best to keep things unchanged in a fresh install and let the user
+  configure them him/herself
+* EXPERIMENTAL Fremantle support
+
 version 2.2:
 * rename the package to browser-switchboard
 * move the config file to $HOME/.config/browser-switchboard, and fall back

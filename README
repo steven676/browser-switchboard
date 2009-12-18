@@ -18,32 +18,30 @@ Quick Start:
 Application Manager, then select Application->Install from file in the
 menu).
 
-If Tear (http://talk.maemo.org/showthread.php?t=28539) is installed,
-it should now be the default browser, meaning that links in most
-applications, locally-saved web pages opened in the file manager, and
-entries in the Web sidebar panel should now open in Tear.  If Tear isn't
-installed, MicroB will be used as the default browser; keep reading to
-see how to change the default browser to something else.
+You can now select the default browser by using the Browser Switchboard
+applet in the Control Panel.  Links in most applications, locally-saved
+web pages opened from the file manager, and (for Maemo 4.x) entries in
+the Web sidebar panel will open in the browser that you select as the
+default.  If you don't configure a default browser, MicroB will continue
+to be used as the default browser.
 
-MicroB can always be opened via the Web menu entry in the applications
-panel (located in the Internet menu by default), or by running "browser"
-from the shell.  While MicroB is open, it will receive all links from
-other applications; closing MicroB will restore your chosen default
-browser.
+No matter which browser you select as the default, MicroB can always be
+opened via the Web menu entry in the applications menu (for Maemo 4.x,
+located in the Internet menu by default), or by running "browser" from
+the shell.  While MicroB is open, it will receive all links from other
+applications; closing MicroB will restore your chosen default browser.
 
 Some users have reported that a restart may be necessary to ensure that
 Browser Switchboard is functioning.  If you experience trouble after
 installing the package, try rebooting your device first.
 
 
-Changing the Default Browser:
+Configuring the Default Browser by Hand:
 
-By default, Tear is used as the default browser if installed (otherwise
-MicroB is the default browser).  To change this behavior, you need to
-create a configuration file (from the shell for now -- a configuration
-UI is in the works).  From a shell on your device (xterm, SSH, or
-similar), run the following (where $ is your prompt, not something you
-type):
+If for some reason, you don't want to use the Control Panel applet to
+configure Browser Switchboard, you can create the configuration file by
+hand from a shell.  Run the following (where $ is your prompt, not
+something you type):
 
 $ cat > $HOME/.config/browser-switchboard <<EOF
 default_browser = "your_browser"
@@ -79,10 +77,13 @@ Lines beginning with # characters are comments and are ignored by the
 script.
 
 In continuous mode, Browser Switchboard keeps running in the background
-instead of closing after handling each request.  This saves roughly two
-seconds of startup time for each link (on my N800 running Diablo), but
-costs you about 2 MB extra memory.  Continuous mode is disabled by
-default; set continuous_mode to 1 to enable.
+instead of closing after handling each request.  This saves a bit of
+startup time for each link (on my N800 running Diablo), but costs you
+about 100 KB extra memory.  Continuous mode is disabled by default; set
+continuous_mode to 1 to enable.  [This option corresponds to the
+"Optimize Browser Switchboard for" option group in the UI; "Lower memory
+usage" corresponds to continuous_mode off, while "Faster browser startup
+time" corresponds to continuous_mode on.]
 
 The "tear", "microb", "fennec", and "midori" options for default_browser
 should be self-explanatory.
@@ -118,38 +119,53 @@ changes to take effect -- if you experience problems, try restarting
 your device first.
 
 
-Manual Installation:
+Compiling Browser Switchboard:
 
-If for some reason you don't want to use the binary package to install
-Browser Switchboard, you can install it by hand:
-1. Make sure you have the necessary dependencies installed: packages
-python2.5, python2.5-dbus, and python-2.5-gobject.
+If for some reason you don't want to use the prebuilt binary package to
+install Browser Switchboard, you can compile and install by hand:
+1. You will need a copy of the SDK for your device.  Make sure the
+following packages are installed: libdbus-glib-1-dev for
+browser-switchboard; libdbus-1-dev, libgtk2.0-dev, hildon-dev,
+hildon-control-panel-dev for the config UI.
 2. Download the source tarball: browser-switchboard_X.Y.orig.tar.gz
-3. Unpack the source tarball on your device:
+3. Unpack the source tarball in your SDK install:
 
-$ tar -xvzf browser-switchboard_X.Y.orig.tar.gz
-$ cd browser-switchboard-X.Y
+SDK$ tar -xvzf browser-switchboard_X.Y.orig.tar.gz
+SDK$ cd browser-switchboard-X.Y
 
-4. As root on your device, copy the browser-switchboard script to
-/usr/bin:
+4. Compile:
 
-# cp browser-switchboard /usr/bin
+SDK$ make
+SDK$ make -C config-ui
 
-(where # represents a root shell prompt).
-5. As root on your device, copy com.nokia.osso_browser.service to
-/usr/share/dbus-1/services, moving the existing file out of the way
-first:
+(If you want the standalone config application instead of the Control
+Panel plugin, do 
+SDK$ make -C config-ui hildon-app
+instead.
 
-# mv /usr/share/dbus-1/services/com.nokia.osso_browser.service
+If you're using the Scratchbox2-based SDK+, you want
+SDK+$ sb2 make
+etc. as usual.)
+
+5. Install to a temporary directory, and tar up the result:
+
+SDK$ make DESTDIR=temp install
+SDK$ make -C config-ui install
+SDK$ cd temp
+SDK$ tar cf stuff.tar .
+
+6. As root on your device, move files that will be replaced in the
+install process out of the way:
+
+DEVICE# mv /usr/share/dbus-1/services/com.nokia.osso_browser.service
   /usr/share/dbus-1/services/com.nokia.osso_browser.bak
-# cp com.nokia.osso_browser.service /usr/share/dbus-1/services
+DEVICE# mv /usr/bin/browser /usr/bin/browser.bak
 
-6. (optional) If you want running "browser" from the command line to
-work as intended, copy browser to /usr/bin, moving the original symlink
-out of the way first:
+7. Copy the tar file from step 5 to your device, and as root, unpack it
+in the root directory of your device:
 
-# mv /usr/bin/browser /usr/bin/browser.bak
-# cp browser /usr/bin
+DEVICE# cd /
+DEVICE# tar xf /path/to/stuff.tar
 
 To uninstall, remove the files you installed, restore the backup copies,
 and reboot your device.

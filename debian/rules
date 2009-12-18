@@ -47,6 +47,7 @@ install: build
 	# debian/browser-switchboard.
 	make DESTDIR=debian/browser-switchboard install
 	make -C config-ui DESTDIR=../debian/browser-switchboard install
+	install -c -m 0644 debian/browser-switchboard-cp.desktop debian/browser-switchboard/usr/share/applications/hildon-control-panel
 
 
 binary-indep: build install

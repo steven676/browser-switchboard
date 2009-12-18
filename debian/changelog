@@ -1,3 +1,20 @@
+browser-switchboard (3.0~rc1-1) extras-devel; urgency=low
+
+  * New "upstream" prerelease.
+  * Upstream changes:
+    - move to an all-C implementation for better performance and memory usage
+    - add a configuration hildon-control-panel plugin
+    - make MicroB the default default browser
+  * Packaging changes:
+    - Accommodate the move to C:
+      + Package is now Arch: any.
+      + Revise Build-Depends and Depends appropriately.
+      + debian/postrm now kills off both Python and C browser-switchboards.
+      + debian/rules: build an Arch: any package, use the new Makefile-based
+        build and install, dh_strip the binaries, make shlibdeps.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 18 Dec 2009 03:48:03 -0800
+
 browser-switchboard (2.2-1) extras-devel; urgency=low
 
   * New "upstream" release.

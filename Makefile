@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Os -mcpu=arm1136jf-s -mthumb
+CFLAGS = -Wall -Os
 CPPFLAGS = `pkg-config --cflags dbus-glib-1`
 LDFLAGS = `pkg-config --libs dbus-glib-1`
 PREFIX = /usr/local

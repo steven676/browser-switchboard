@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Os -mcpu=arm1136jf-s -mthumb
+CFLAGS = -Wall -Os
 CFLAGS_PLUGIN = -fPIC
 CPPFLAGS = -I../ `pkg-config --cflags gtk+-2.0`
 CPPFLAGS_HILDON = -DHILDON `pkg-config --cflags hildon-1`

@@ -18,7 +18,7 @@ app_obj = $(APP).app.o $(other_obj)
 HILDON_APP = $(APP)-hildon
 happ_obj = $(APP).happ.o $(other_obj)
 PLUGIN = lib$(APP).so
-plugin_obj = $(APP).plugin.o $(other_obj)
+plugin_obj = $(APP).plugin.o ../configfile.plugin.o
 
 all: plugin
 plugin: $(PLUGIN)

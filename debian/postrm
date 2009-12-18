@@ -19,11 +19,14 @@ set -e
 # the debian-policy package
 
 kill_old_proxies() {
+	# Kill off old python browser-switchboards, if any
 	# This would be so much nicer with pgrep/pkill ...
 	proxy_pids=`busybox ps | fgrep "python /usr/bin/browser-switchboard" | fgrep -v grep | awk '{ print $1 }'`
 	if [ ! -z "$proxy_pids" ]; then
 		kill $proxy_pids
 	fi
+	# Kill off C browser-switchboards
+	killall browser-switchboard
 }
 
 case "$1" in

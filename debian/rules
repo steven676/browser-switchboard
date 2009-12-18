@@ -22,6 +22,9 @@ build: build-stamp
 build-stamp: configure-stamp 
 	dh_testdir
 
+	make
+	make -C config-ui
+
 	touch $@
 
 clean:
@@ -39,12 +42,14 @@ install: build
 
 	# Add here commands to install the package into
 	# debian/browser-switchboard.
-	install -c -m 0755 browser-switchboard debian/browser-switchboard/usr/bin/browser-switchboard
-	install -c -m 0644 com.nokia.osso_browser.service debian/browser-switchboard/usr/share/dbus-1/services
-	install -c -m 0755 browser debian/browser-switchboard/usr/bin/browser
+	make install
+	make -C config-ui install
 
 
 binary-indep: build install
+# arch: any package, nothing to do here
+
+binary-arch: build install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs 
@@ -63,19 +68,16 @@ binary-indep: build install
 #	dh_installinfo
 #	dh_installman
 #	dh_link
-#	dh_strip
+	dh_strip
 	dh_compress
 	dh_fixperms
 #	dh_perl
 #	dh_makeshlibs
 	dh_installdeb
-#	dh_shlibdeps
+	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
-
-binary-arch: build install
-# arch: all package, nothing to do here
 
 binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary install configure

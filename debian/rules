@@ -32,6 +32,9 @@ clean:
 	dh_testroot
 	rm -f build-stamp configure-stamp
 
+	make clean
+	make -C config-ui clean
+
 	dh_clean 
 
 install: build

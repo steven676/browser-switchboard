@@ -21,6 +21,7 @@ strip: $(APP)
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	mkdir -p $(DESTDIR)$(PREFIX)/share/dbus-1/services
 	install -c -m 0755 browser-switchboard $(DESTDIR)$(PREFIX)/bin
 	install -c -m 0644 com.nokia.osso_browser.service $(DESTDIR)$(PREFIX)/share/dbus-1/services
 	install -c -m 0755 browser $(DESTDIR)$(PREFIX)/bin

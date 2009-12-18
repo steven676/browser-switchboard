@@ -42,8 +42,8 @@ install: build
 
 	# Add here commands to install the package into
 	# debian/browser-switchboard.
-	make install
-	make -C config-ui install
+	make DESTDIR=debian/browser-switchboard install
+	make -C config-ui DESTDIR=debian/browser-switchboard install
 
 
 binary-indep: build install

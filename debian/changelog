@@ -12,6 +12,8 @@ browser-switchboard (3.0~rc1-1) extras-devel; urgency=low
       + debian/postrm now kills off both Python and C browser-switchboards.
       + debian/rules: build an Arch: any package, use the new Makefile-based
         build and install, dh_strip the binaries, make shlibdeps.
+  * Cherry-pick 323bf8...
+    ("config-ui: Teach UI how to HUP C browser-switchboards") from Git master.
 
  -- Steven Luo <steven+maemo@steven676.net>  Fri, 18 Dec 2009 03:48:03 -0800
 

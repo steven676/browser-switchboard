@@ -26,7 +26,10 @@ kill_old_proxies() {
 		kill $proxy_pids
 	fi
 	# Kill off C browser-switchboards
-	kill `pidof browser-switchboard`
+	proxy_pids=`pidof browser-switchboard || true`
+	if [ ! -z "$proxy_pids" ]; then
+		kill $proxy_pids
+	fi
 }
 
 case "$1" in

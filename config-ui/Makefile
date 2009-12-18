@@ -46,10 +46,12 @@ $(PLUGIN): $(plugin_obj)
 	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) $(CPPFLAGS) $(CPPFLAGS_PLUGIN) \
 		-c -o $@ $<
 
-strip: $(PLUGIN)
+strip: strip-plugin
+strip-plugin: plugin
 	strip $(PLUGIN)
 
-install: all
+install: install-plugin
+install-plugin: plugin
 	mkdir -p $(DESTDIR)$(PREFIX)/lib/hildon-control-panel
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications/hildon-control-panel
 	install -c -m 0755 $(PLUGIN) $(DESTDIR)$(PREFIX)/lib/hildon-control-panel
@@ -58,4 +60,4 @@ install: all
 clean:
 	rm -f $(APP) $(HILDON_APP) $(PLUGIN) *.o ../configfile.o
 
-.PHONY: strip install plugin app hildon-app
+.PHONY: strip strip-plugin install install-plugin plugin app hildon-app

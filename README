@@ -126,7 +126,7 @@ If for some reason you don't want to use the prebuilt binary package to
 install Browser Switchboard, you can compile and install by hand:
 1. You will need a copy of the SDK for your device.  Make sure the
 following packages are installed: libdbus-glib-1-dev for
-browser-switchboard; libdbus-1-dev, libgtk2.0-dev, hildon-dev,
+browser-switchboard; libdbus-1-dev, libgtk2.0-dev, libhildon1-dev,
 hildon-control-panel-dev for the config UI.
 2. Download the source tarball: browser-switchboard_X.Y.orig.tar.gz
 3. Unpack the source tarball in your SDK install:

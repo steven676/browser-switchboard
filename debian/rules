@@ -9,8 +9,14 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-
-
+# Optimize for N8x0 CPUs if building for armel
+ifeq ($(DEB_HOST_ARCH),armel)
+	EXTRA_CFLAGS += -march=arm1136jf-s
+	# Use Thumb for smaller binaries if requested
+	ifneq (,$(filter thumb,$(DEB_BUILD_OPTIONS)))
+		EXTRA_CFLAGS += -mthumb
+	endif
+endif
 
 configure: configure-stamp
 configure-stamp:

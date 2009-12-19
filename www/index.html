@@ -37,13 +37,45 @@ other alternative browsers to use Browser Switchboard</li>
 </ul>
 
 <h2>Getting Browser Switchboard</h2>
-<p>Source code and packages for Diablo can be found on the maemo Garage
-<a href="https://garage.maemo.org/frs/?group_id=1159">download page</a>.</p>
+<p>Source code, packages for Diablo, and EXPERIMENTAL packages for Fremantle
+can be found on the maemo Garage
+<a href="https://garage.maemo.org/frs/?group_id=1159">download page</a>.
+Packages can also be installed from the maemo
+<a href="http://wiki.maemo.org/Extras-devel">extras-devel repository</a>
+(though don't blindly enable extras-devel and install/upgrade &mdash; see
+the linked page first!)</p>
+
+<h2>Quick Start</h2>
+<ol>
+<li>Download the binary package: browser-switchboard_X.Y-Z_all.deb
+(where X.Y-Z is the version number, of course).</li>
+<li>Install the package using the Application Manager (on Diablo, open the
+Application Manager, then select Application->Install from file in the
+menu).</li>
+</ol>
+
+<p><img src="cpapplet-diablo.jpg" width=320 alt="Browser Switchboard control panel UI"><br>
+You can now select the default browser by using the Browser Switchboard
+applet in the Control Panel.  Links in most applications, locally-saved
+web pages opened from the file manager, and (for Maemo 4.x) entries in
+the Web sidebar panel will open in the browser that you select as the
+default.  If you don't configure a default browser, MicroB will continue
+to be used as the default browser.</p>
+
+<p>No matter which browser you select as the default, MicroB can always be
+opened via the Web menu entry in the applications menu (for Maemo 4.x,
+located in the Internet menu by default), or by running "browser" from
+the shell.  While MicroB is open, it will receive all links from other
+applications; closing MicroB will restore your chosen default browser.</p>
+
+<p>Some users have reported that a restart may be necessary to ensure that
+Browser Switchboard is functioning.  If you experience trouble after
+installing the package, try rebooting your device first.</p>
 
 <h2>Documentation</h2>
 <p>See the
-<a href="https://git.maemo.org/projects/browser-switch/?p=browser-switch;a=blob_plain;f=README;h=e7917c6664913fef15cce3b2bc7f974a5e664a4c;hb=HEAD">README</a>
-for instructions on how to configure and use Browser Switchboard.</p>
+<a href="https://git.maemo.org/projects/browser-switch/?p=browser-switch;a=blob_plain;f=README;hb=HEAD">README</a>
+for further instructions on how to configure and use Browser Switchboard.</p>
 
 <h2>Support</h2>
 <p>You can email your question to the maintainers (see below), or you can take

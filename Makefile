@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Os
+CFLAGS = -Wall -Os $(EXTRA_CFLAGS)
 CPPFLAGS = `pkg-config --cflags dbus-glib-1`
 LDFLAGS = `pkg-config --libs dbus-glib-1`
 PREFIX = /usr

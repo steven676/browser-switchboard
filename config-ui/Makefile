@@ -4,11 +4,11 @@ CFLAGS_PLUGIN = -fPIC
 CPPFLAGS = -I../ `pkg-config --cflags gtk+-2.0`
 CPPFLAGS_HILDON = -DHILDON `pkg-config --cflags hildon-1`
 CPPFLAGS_PLUGIN = $(CPPFLAGS_HILDON) -DHILDON_CP_APPLET \
-	`pkg-config --cflags dbus-1` `pkg-config --cflags hildon-control-panel`
+	`pkg-config --cflags libosso` `pkg-config --cflags hildon-control-panel`
 LDFLAGS = `pkg-config --libs gtk+-2.0`
 LDFLAGS_HILDON = `pkg-config --libs hildon-1`
 LDFLAGS_PLUGIN = -shared $(LDFLAGS_HILDON) \
-	`pkg-config --libs dbus-1` `pkg-config --libs hildon-control-panel`
+	`pkg-config --libs libosso` `pkg-config --libs hildon-control-panel`
 PREFIX = /usr
 
 other_obj = ../configfile.o

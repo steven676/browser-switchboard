@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Os
+CFLAGS = -Wall -Os $(EXTRA_CFLAGS)
 CFLAGS_PLUGIN = -fPIC
 CPPFLAGS = -I../ `pkg-config --cflags gtk+-2.0`
 CPPFLAGS_HILDON = -DHILDON `pkg-config --cflags hildon-1`

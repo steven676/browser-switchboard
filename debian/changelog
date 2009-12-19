@@ -1,3 +1,10 @@
+browser-switchboard (3.0~rc1-2fremantle1) extras-devel; urgency=low
+
+  * Experimental build for Fremantle.
+  * Upload to extras-devel.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 18 Dec 2009 20:44:08 -0800
+
 browser-switchboard (3.0~rc1-2) extras-devel; urgency=low
 
   * Actually upload to extras-devel.

@@ -1,3 +1,12 @@
+browser-switchboard (3.0~rc1-2) extras-devel; urgency=low
+
+  * Actually upload to extras-devel.
+  * Replace the dependency on libdbus-1-dev and the call to pkg-config for
+    dbus-1 with libosso-dev and libosso, respectively, as that's the package
+    the control panel plugin interface actually needs.  Fixes autobuild.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 18 Dec 2009 19:07:25 -0800
+
 browser-switchboard (3.0~rc1-1) extras-devel; urgency=low
 
   * New "upstream" prerelease.

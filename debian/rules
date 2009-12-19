@@ -11,7 +11,7 @@
 
 # Optimize for N8x0 CPUs if building for armel
 ifeq ($(DEB_HOST_ARCH),armel)
-	EXTRA_CFLAGS += -march=arm1136jf-s
+	EXTRA_CFLAGS += -mcpu=arm1136jf-s
 	# Use Thumb for smaller binaries if requested
 	ifneq (,$(filter thumb,$(DEB_BUILD_OPTIONS)))
 		EXTRA_CFLAGS += -mthumb
@@ -28,8 +28,8 @@ build: build-stamp
 build-stamp: configure-stamp 
 	dh_testdir
 
-	make
-	make -C config-ui
+	make EXTRA_CFLAGS="$(EXTRA_CFLAGS)"
+	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)"
 
 	touch $@
 

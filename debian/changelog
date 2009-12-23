@@ -1,3 +1,23 @@
+browser-switchboard (3.0-1) extras-devel; urgency=low
+
+  * New "upstream" stable release.
+  * Upstream changes:
+    - fix the UI so that it looks for C browser-switchboard processes to send
+      SIGHUP to, not Python browser-switchboards
+    - add support for EXTRA_CFLAGS in Makefiles, to allow package builds to
+      pass additional optimization flags
+    - replace calls to `pkg-config dbus-1` in config-ui/Makefile with calls to
+      `pkg-config libosso` instead; asking for dbus-1 was incorrect and
+      covering up a problem that caused maemo extras-devel autobuilds to fail
+  * Packaging changes:
+    - Use EXTRA_CFLAGS to generate N8x0 optimized builds, and use Thumb if
+      DEB_BUILD_OPTIONS requests it.
+    - Bump Standards-Version to 3.8.0; no changes required.
+    - 323bf8... ("config-ui: Teach UI how to HUP C browser-switchboards")
+      merged upstream, remove from diff.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Wed, 23 Dec 2009 03:48:02 -0800
+
 browser-switchboard (3.0~rc1-2) extras-devel; urgency=low
 
   * Actually upload to extras-devel.

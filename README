@@ -1,5 +1,5 @@
 BROWSER SWITCHBOARD
-version 3.0rc1
+version 3.0
 
 Browser Switchboard is a program which allows you to choose which
 browser to use as the default browser. It supports MicroB, Tear,
@@ -75,7 +75,8 @@ default_browser = "tear"
 # END SAMPLE CONFIG FILE
 
 Lines beginning with # characters are comments and are ignored by the
-script.
+script.  [Each option corresponds directly to an option or option group
+in the configuration UI.]
 
 In continuous mode, Browser Switchboard keeps running in the background
 instead of closing after handling each request.  This saves a bit of
@@ -87,7 +88,8 @@ usage" corresponds to continuous_mode off, while "Faster browser startup
 time" corresponds to continuous_mode on.]
 
 The "tear", "microb", "fennec", and "midori" options for default_browser
-should be self-explanatory.
+should be self-explanatory.  [These correspond to the options in the
+"Default browser" combo box in the UI.]
 
 If the default browser is "other", Browser Switchboard will run the
 program specified in other_browser_cmd as the default browser, with a
@@ -98,7 +100,9 @@ of typing in
 
 $ some_browser 'http://www.google.com/'
 
-at a shell.
+at a shell.  [In the UI, setting "Default brower" to "Other" activates
+the "Command (%s for URI)" setting, which corresponds to the value of
+other_browser_cmd.]
 
 
 Browser Switchboard and MicroB's browserd:

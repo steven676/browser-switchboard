@@ -1,6 +1,10 @@
 browser-switchboard (3.0-1fremantle1) extras-devel; urgency=low
 
   * Experimental build for Fremantle.
+  * Add XSBC-Bugtracker to debian/control to indicate where bugs should be
+    filed; needed for maemo extras QA.
+  * No need to add CPU optimization flags, the Fremantle toolchain
+    automatically optimizes for N900/OMAP3.
 
  -- Steven Luo <steven+maemo@steven676.net>  Wed, 23 Dec 2009 04:01:53 -0800
 

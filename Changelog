@@ -1,3 +1,12 @@
+version 3.0:
+* fix the UI so that it looks for C browser-switchboard processes to send
+  SIGHUP to, not Python browser-switchboards 
+* add support for EXTRA_CFLAGS in Makefiles, to allow package builds to pass
+  additional optimization flags
+* replace calls to `pkg-config dbus-1` in config-ui/Makefile with calls to
+  `pkg-config libosso` instead; asking for dbus-1 was incorrect and covering
+  up a problem that caused maemo extras-devel autobuilds to fail
+
 version 3.0rc1:
 * reimplement the main browser-switchboard process in C, which leads to much
   faster startup times and much lower memory usage

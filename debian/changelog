@@ -1,3 +1,9 @@
+browser-switchboard (3.0-1fremantle1) extras-devel; urgency=low
+
+  * Experimental build for Fremantle.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Wed, 23 Dec 2009 04:01:53 -0800
+
 browser-switchboard (3.0-1) extras-devel; urgency=low
 
   * New "upstream" stable release.

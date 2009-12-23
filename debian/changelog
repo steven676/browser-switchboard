@@ -15,6 +15,7 @@ browser-switchboard (3.0-1) extras-devel; urgency=low
     - Bump Standards-Version to 3.8.0; no changes required.
     - 323bf8... ("config-ui: Teach UI how to HUP C browser-switchboards")
       merged upstream, remove from diff.
+    - Remove unneeded file debian/dirs.
 
  -- Steven Luo <steven+maemo@steven676.net>  Wed, 23 Dec 2009 03:48:02 -0800
 

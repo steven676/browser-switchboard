@@ -21,25 +21,12 @@ It supports MicroB, Tear, Fennec/Mobile Firefox, and Midori out of the box,
 and can also be used to launch MicroB without having browserd running.</p>
 
 <h2>Current Release</h2>
-<p>Version 3.0rc1 (2009/12/18) (<a href="https://garage.maemo.org/frs/download.php/7081/browser-switchboard_3.0rc1-1_armel.deb">Diablo package</a>)</p>
+<p>Version 3.0 (2009/12/23) (<a href="https://garage.maemo.org/frs/download.php/7116/browser-switchboard_3.0-1_armel.deb">Diablo package</a>, <a href="https://garage.maemo.org/frs/download.php/7112/browser-switchboard_3.0-1fremantle1_armel.deb">EXPERIMENTAL Fremantle package</a>)</p>
 <ul>
-<li>Release candidate -- not (yet) a stable release</li>
 <li>Add a control panel applet to help configure the UI</li>
 <li>Reimplement the core D-Bus proxy in C to improve speed and memory footprint</li>
 <li>Default to launching MicroB as the default browser if unconfigured -- if you were using Browser Switchboard to launch Tear, you need to explicitly set Tear as the default browser using the UI (or by configuring by hand)</li>
 <li><b>EXPERIMENTAL</b> Fremantle support (see <a href="https://garage.maemo.org/frs/?group_id=1159">download page</a> for source and packages).  BACK UP before installing, and let me know how it goes!</li>
-</ul>
-<p>Version 2.2 (2009/12/14) (<a href="https://garage.maemo.org/frs/download.php/7038/browser-switchboard_2.2-1_all.deb">Diablo package</a>)</p>
-<ul>
-<li>Rename the package to browser-switchboard</li>
-<li>Move the config file to /home/user/.config/browser-switchboard, and
-fall back to the old location if no config file is found</li>
-<li>If no config file is found and Tear isn't installed, launch MicroB;
-this avoids breaking link opening on a system with a freshly installed
-browser-switchboard package and Tear not installed</li>
-<li>Package no longer depends on Tear; should make it easier for users of
-other alternative browsers to use Browser Switchboard</li>
-<li>substantial documentation update</li>
 </ul>
 
 <h2>Getting Browser Switchboard</h2>
@@ -86,7 +73,7 @@ for further instructions on how to configure and use Browser Switchboard.</p>
 <h2>Support</h2>
 <p>You can email your question to the maintainers (see below), or you can take
 it to the
-<a href="http://talk.maemo.org/showthread.php?t=28539">Tear thread</a>
+<a href="http://talk.maemo.org/showthread.php?t=38273">Browser Switchboard thread</a>
 on the talk.maemo.org forums.</p>
 
 <h2>Development</h2>

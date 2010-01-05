@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <signal.h>
 #include <dbus/dbus-glib.h>
 
 #include "browser-switchboard.h"
@@ -42,6 +43,21 @@ static void osso_browser_class_init(OssoBrowserClass *klass)
 
 #include "dbus-server-glue.h"
 
+
+/* Ignore reconfiguration signal (SIGHUP)
+   When not running in continuous mode, no SIGHUP handler is installed, which
+   causes browser-switchboard to quit on a reconfig request.  This is normally
+   what we want -- but if we're already in the process of dispatching a
+   request, we'll quit anyway after finishing what we're doing, so ignoring the
+   signal is the right thing to do. */
+static void ignore_reconfig_requests(void) {
+	struct sigaction act;
+
+	act.sa_flags = SA_RESTART;
+	sigemptyset(&(act.sa_mask));
+	act.sa_handler = SIG_IGN;
+	sigaction(SIGHUP, &act, NULL);
+}
 
 static void open_address(const char *uri) {
 	char *new_uri;
@@ -75,24 +91,32 @@ static void open_address(const char *uri) {
  */
 gboolean osso_browser_load_url(OssoBrowser *obj,
 		const char *uri, GError **error) {
+	if (!ctx.continuous_mode)
+		ignore_reconfig_requests();
 	open_address(uri);
 	return TRUE;
 }
 
 gboolean osso_browser_mime_open(OssoBrowser *obj,
 		const char *uri, GError **error) {
+	if (!ctx.continuous_mode)
+		ignore_reconfig_requests();
 	open_address(uri);
 	return TRUE;
 }
 
 gboolean osso_browser_open_new_window(OssoBrowser *obj,
 		const char *uri, GError **error) {
+	if (!ctx.continuous_mode)
+		ignore_reconfig_requests();
 	open_address(uri);
 	return TRUE;
 }
 
 gboolean osso_browser_top_application(OssoBrowser *obj,
 		GError **error) {
+	if (!ctx.continuous_mode)
+		ignore_reconfig_requests();
 	launch_microb(&ctx, "new_window");
 	return TRUE;
 }
@@ -101,6 +125,8 @@ gboolean osso_browser_top_application(OssoBrowser *obj,
    for use by /usr/bin/browser wrapper to implement --url */
 gboolean osso_browser_switchboard_launch_microb(OssoBrowser *obj,
 		const char *uri, GError **error) {
+	if (!ctx.continuous_mode)
+		ignore_reconfig_requests();
 	launch_microb(&ctx, (char *)uri);
 	return TRUE;
 }

@@ -302,7 +302,7 @@ static void do_reconfig(void) {
 	save_config();
 
 	/* Try to send SIGHUP to any running browser-switchboard process
-	   This causes it to reread config files if in continuous_mode, and
+	   This causes it to reread config files if in continuous_mode, or
 	   die so that the config will be reloaded on next start otherwise */
 	system("kill -HUP `pidof browser-switchboard` > /dev/null 2>&1");
 }

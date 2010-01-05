@@ -2,7 +2,8 @@
  * browser-switchboard-cp.c -- a hildon-control-panel applet for
  * selecting the default browser for Browser Switchboard
  * 
- * Copyright (C) 2009 Steven Luo
+ * Copyright (C) 2009-2010 Steven Luo
+ * Copyright (C) 2009-2010 Faheem Pervez
  * 
  * Derived from services-cp.c from maemo-control-services
  * Copyright (c) 2008 Janne Kataja <janne.kataja@iki.fi>

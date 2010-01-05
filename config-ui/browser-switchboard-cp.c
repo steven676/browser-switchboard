@@ -374,9 +374,10 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 			   default_browser_selector_button, FALSE, FALSE, 0);
 
 	cw.other_browser_cmd_entry = hildon_entry_new(_HILDON_SIZE_DEFAULT);
+	/* Disable autocapitalization and dictionary features for the entry */
 	input_mode = hildon_gtk_entry_get_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry));
-	input_mode &= ~HILDON_GTK_INPUT_MODE_AUTOCAP;
-	input_mode &= ~HILDON_GTK_INPUT_MODE_DICTIONARY;
+	input_mode &= ~(HILDON_GTK_INPUT_MODE_AUTOCAP |
+			HILDON_GTK_INPUT_MODE_DICTIONARY);
 	hildon_gtk_entry_set_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry), input_mode);
 
 	cw.other_browser_cmd_entry_label = hildon_caption_new(NULL,
@@ -418,6 +419,9 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	GtkWidget *default_browser_combo_label;
 	GtkWidget *continuous_mode_label;
 	int i;
+#ifdef HILDON
+	HildonGtkInputMode input_mode;
+#endif
 
 	dialog = gtk_dialog_new_with_buttons(
 		"Browser Switchboard",
@@ -459,6 +463,13 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 			5, 0);
 
 	cw.other_browser_cmd_entry = gtk_entry_new();
+#ifdef HILDON
+	/* Disable autocapitalization and dictionary features for the entry */
+	input_mode = hildon_gtk_entry_get_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry));
+	input_mode &= ~(HILDON_GTK_INPUT_MODE_AUTOCAP |
+			HILDON_GTK_INPUT_MODE_DICTIONARY);
+	hildon_gtk_entry_set_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry), input_mode);
+#endif
 	cw.other_browser_cmd_entry_label = gtk_label_new("Command (%s for URI):");
 	gtk_misc_set_alignment(GTK_MISC(cw.other_browser_cmd_entry_label), 1, 0.5);
 	gtk_widget_set_sensitive(cw.other_browser_cmd_entry, FALSE);

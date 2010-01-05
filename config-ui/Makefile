@@ -1,11 +1,11 @@
 CC = gcc
 CFLAGS = -Wall -Os $(EXTRA_CFLAGS)
 CFLAGS_PLUGIN = -fPIC
-CPPFLAGS = -I../ `pkg-config --cflags gtk+-2.0`
+CPPFLAGS = -I../ `pkg-config --cflags gtk+-2.0` $(EXTRA_CPPFLAGS)
 CPPFLAGS_HILDON = -DHILDON `pkg-config --cflags hildon-1`
 CPPFLAGS_PLUGIN = $(CPPFLAGS_HILDON) -DHILDON_CP_APPLET \
 	`pkg-config --cflags libosso` `pkg-config --cflags hildon-control-panel`
-LDFLAGS = `pkg-config --libs gtk+-2.0`
+LDFLAGS = `pkg-config --libs gtk+-2.0` $(EXTRA_LDFLAGS)
 LDFLAGS_HILDON = `pkg-config --libs hildon-1`
 LDFLAGS_PLUGIN = -shared $(LDFLAGS_HILDON) \
 	`pkg-config --libs libosso` `pkg-config --libs hildon-control-panel`

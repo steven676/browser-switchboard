@@ -17,6 +17,8 @@ ifeq ($(DEB_HOST_ARCH),armel)
 	endif
 endif
 
+EXTRA_CPPFLAGS = -DFREMANTLE
+
 configure: configure-stamp
 configure-stamp:
 	touch configure-stamp
@@ -27,8 +29,8 @@ build: build-stamp
 build-stamp: configure-stamp 
 	dh_testdir
 
-	make EXTRA_CFLAGS="$(EXTRA_CFLAGS)"
-	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)"
+	make EXTRA_CFLAGS="$(EXTRA_CFLAGS)" EXTRA_CPPFLAGS="$(EXTRA_CPPFLAGS)"
+	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)" EXTRA_CPPFLAGS="$(EXTRA_CPPFLAGS)"
 
 	touch $@
 

@@ -1,3 +1,18 @@
+browser-switchboard (3.1-1) extras-devel; urgency=low
+
+  * New "upstream" stable release.
+  * Upstream changes:
+    - add a new, more finger-friendly GUI for Fremantle, based on work by
+      Faheem Pervez (build UI with EXTRA_CPPFLAGS=-DFREMANTLE)
+    - make sure reconfig signal (SIGHUP) doesn't interrupt dispatch of a
+      request when continuous mode is off
+    - disable autocapitalization and predictive text features for the
+      other_browser_cmd entry in the UI
+    - add support for EXTRA_CPPFLAGS in Makefiles, to allow package builds to
+      pass feature/configuration defines; add EXTRA_LDFLAGS too, just in case
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 15 Jan 2010 01:54:56 -0800
+
 browser-switchboard (3.0-1fremantle1) extras-devel; urgency=low
 
   * Experimental build for Fremantle.

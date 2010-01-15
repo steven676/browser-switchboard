@@ -2,7 +2,8 @@
  * browser-switchboard-cp.c -- a hildon-control-panel applet for
  * selecting the default browser for Browser Switchboard
  * 
- * Copyright (C) 2009 Steven Luo
+ * Copyright (C) 2009-2010 Steven Luo
+ * Copyright (C) 2009-2010 Faheem Pervez
  * 
  * Derived from services-cp.c from maemo-control-services
  * Copyright (c) 2008 Janne Kataja <janne.kataja@iki.fi>
@@ -33,17 +34,30 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gtk/gtk.h>
+
 #ifdef HILDON
 #include <hildon/hildon-banner.h>
 #include <hildon/hildon-program.h>
+
+#ifdef FREMANTLE
+#include <hildon/hildon-touch-selector.h>
+#include <hildon/hildon-picker-button.h>
+#include <hildon/hildon-caption.h>
+#include <hildon/hildon-entry.h>
+#endif /* FREMANTLE */
+
 #ifdef HILDON_CP_APPLET
 #include <hildon-cp-plugin/hildon-cp-plugin-interface.h>
-#endif
-#endif
+#endif /* HILDON_CP_APPLET */
+#endif /* HILDON */
 
 #include "configfile.h"
 
 #define CONTINUOUS_MODE_DEFAULT 0
+
+#if defined(HILDON) && defined(FREMANTLE)
+#define _HILDON_SIZE_DEFAULT (HILDON_SIZE_AUTO_WIDTH|HILDON_SIZE_FINGER_HEIGHT)
+#endif
 
 struct browser_entry {
 	char *config;
@@ -59,9 +73,14 @@ struct browser_entry browsers[] = {
 };
 
 struct config_widgets {
+#if defined(HILDON) && defined(FREMANTLE)
+	GtkWidget *continuous_mode_selector;
+	GtkWidget *default_browser_selector;
+#else
 	GtkWidget *continuous_mode_off_radio;
 	GtkWidget *continuous_mode_on_radio;
 	GtkWidget *default_browser_combo;
+#endif
 	GtkWidget *other_browser_cmd_entry;
 	GtkWidget *other_browser_cmd_entry_label;
 };
@@ -72,6 +91,21 @@ GtkWidget *dialog;
 /**********************************************************************
  * Configuration routines
  **********************************************************************/
+
+#if defined(HILDON) && defined(FREMANTLE)
+
+static inline int get_continuous_mode(void) {
+	return hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), 0);
+}
+static inline void set_continuous_mode(int state) {
+	hildon_touch_selector_set_active(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), 0, state);
+}
+
+static inline char *get_default_browser(void) {
+	return browsers[hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0)].config;
+}
+
+#else /* !defined(HILDON) || !defined(FREMANTLE) */
 
 static inline int get_continuous_mode(void) {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(cw.continuous_mode_on_radio));
@@ -86,6 +120,9 @@ static inline void set_continuous_mode(int state) {
 static inline char *get_default_browser(void) {
 	return browsers[gtk_combo_box_get_active(GTK_COMBO_BOX(cw.default_browser_combo))].config;
 }
+
+#endif /* defined(HILDON) && defined(FREMANTLE) */
+
 static void set_default_browser(char *browser) {
 	gint i;
 
@@ -97,7 +134,11 @@ static void set_default_browser(char *browser) {
 		/* No match found, set to the default browser */
 		i = 0;
 
+#if defined(HILDON) && defined(FREMANTLE)
+	hildon_touch_selector_set_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0, i);
+#else
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cw.default_browser_combo), i);
+#endif
 }
 
 static inline char *get_other_browser_cmd(void) {
@@ -261,7 +302,7 @@ static void do_reconfig(void) {
 	save_config();
 
 	/* Try to send SIGHUP to any running browser-switchboard process
-	   This causes it to reread config files if in continuous_mode, and
+	   This causes it to reread config files if in continuous_mode, or
 	   die so that the config will be reloaded on next start otherwise */
 	system("kill -HUP `pidof browser-switchboard` > /dev/null 2>&1");
 }
@@ -271,11 +312,18 @@ static void do_reconfig(void) {
  * Callbacks
  **********************************************************************/
 
+#if defined(HILDON) && defined(FREMANTLE)
+static void default_browser_selector_callback(GtkWidget *widget,
+		gint column, gpointer data) {
+#else
 static void default_browser_combo_callback(GtkWidget *widget, gpointer data) {
+#endif
 	if (!strcmp(get_default_browser(), "other")) {
+		gtk_editable_set_editable(GTK_EDITABLE(cw.other_browser_cmd_entry), TRUE);
 		gtk_widget_set_sensitive(cw.other_browser_cmd_entry, TRUE);
 		gtk_widget_set_sensitive(cw.other_browser_cmd_entry_label, TRUE);
 	} else {
+		gtk_editable_set_editable(GTK_EDITABLE(cw.other_browser_cmd_entry), FALSE); /* FREMANTLE: give the text the greyed-out look */
 		gtk_widget_set_sensitive(cw.other_browser_cmd_entry, FALSE);
 		gtk_widget_set_sensitive(cw.other_browser_cmd_entry_label, FALSE);
 	}
@@ -286,6 +334,85 @@ static void default_browser_combo_callback(GtkWidget *widget, gpointer data) {
  * Interface
  **********************************************************************/
 
+#if defined(HILDON) && defined(FREMANTLE)
+/*
+ * Fremantle Hildon dialog
+ */
+static GtkDialog *swb_config_dialog(gpointer cp_window) {
+	GtkWidget *dialog_vbox;
+
+	GtkWidget *default_browser_selector_button;
+	GtkWidget *continuous_mode_selector_button;
+	int i;
+	HildonGtkInputMode input_mode;
+
+	dialog = gtk_dialog_new_with_buttons(
+		"Browser Switchboard",
+		GTK_WINDOW(cp_window),
+		GTK_DIALOG_MODAL,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		GTK_STOCK_CANCEL,
+		GTK_RESPONSE_CANCEL,
+		NULL);
+
+	dialog_vbox = GTK_DIALOG(dialog)->vbox;
+
+	/* Config options */
+	cw.default_browser_selector = hildon_touch_selector_new_text();
+	for (i = 0; browsers[i].config; ++i)
+		hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), browsers[i].displayname);
+	hildon_touch_selector_set_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0, 0);
+	default_browser_selector_button = hildon_picker_button_new(_HILDON_SIZE_DEFAULT, HILDON_BUTTON_ARRANGEMENT_HORIZONTAL);
+	hildon_button_set_title(HILDON_BUTTON(default_browser_selector_button),
+				"Default browser:");
+	hildon_picker_button_set_selector(HILDON_PICKER_BUTTON(default_browser_selector_button), HILDON_TOUCH_SELECTOR(cw.default_browser_selector));
+	hildon_button_set_alignment(HILDON_BUTTON(default_browser_selector_button),
+				    0, 0.5, 0, 0);
+	g_signal_connect(G_OBJECT(cw.default_browser_selector), "changed",
+			 G_CALLBACK(default_browser_selector_callback), NULL);
+	gtk_box_pack_start(GTK_BOX(dialog_vbox),
+			   default_browser_selector_button, FALSE, FALSE, 0);
+
+	cw.other_browser_cmd_entry = hildon_entry_new(_HILDON_SIZE_DEFAULT);
+	/* Disable autocapitalization and dictionary features for the entry */
+	input_mode = hildon_gtk_entry_get_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry));
+	input_mode &= ~(HILDON_GTK_INPUT_MODE_AUTOCAP |
+			HILDON_GTK_INPUT_MODE_DICTIONARY);
+	hildon_gtk_entry_set_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry), input_mode);
+
+	cw.other_browser_cmd_entry_label = hildon_caption_new(NULL,
+			"Command (%s for URI):",
+			cw.other_browser_cmd_entry,
+			NULL, HILDON_CAPTION_OPTIONAL);
+	gtk_widget_set_sensitive(cw.other_browser_cmd_entry, FALSE);
+	gtk_widget_set_sensitive(cw.other_browser_cmd_entry_label, FALSE);
+	hildon_gtk_widget_set_theme_size(cw.other_browser_cmd_entry_label, _HILDON_SIZE_DEFAULT);
+	gtk_box_pack_start(GTK_BOX(dialog_vbox),
+			   cw.other_browser_cmd_entry_label, FALSE, FALSE, 0);
+
+	cw.continuous_mode_selector = hildon_touch_selector_new_text();
+	hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), "Lower memory usage");
+	hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), "Faster browser startup time");
+
+	continuous_mode_selector_button = hildon_picker_button_new(_HILDON_SIZE_DEFAULT, HILDON_BUTTON_ARRANGEMENT_VERTICAL);
+	hildon_button_set_title(HILDON_BUTTON(continuous_mode_selector_button),
+				"Optimize Browser Switchboard for:");
+	hildon_picker_button_set_selector(HILDON_PICKER_BUTTON(continuous_mode_selector_button), HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector));
+	hildon_button_set_alignment(HILDON_BUTTON(continuous_mode_selector_button),
+				    0, 0, 0, 0);
+	set_continuous_mode(CONTINUOUS_MODE_DEFAULT);
+	gtk_box_pack_start(GTK_BOX(dialog_vbox),
+			   continuous_mode_selector_button, FALSE, FALSE, 0);
+
+	gtk_widget_show_all(dialog);
+	return GTK_DIALOG(dialog);
+}
+
+#else /* !defined(HILDON) || !defined(FREMANTLE) */
+/*
+ * GTK+/Diablo Hildon dialog
+ */
 static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	GtkWidget *dialog_vbox;
 
@@ -293,6 +420,9 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	GtkWidget *default_browser_combo_label;
 	GtkWidget *continuous_mode_label;
 	int i;
+#ifdef HILDON
+	HildonGtkInputMode input_mode;
+#endif
 
 	dialog = gtk_dialog_new_with_buttons(
 		"Browser Switchboard",
@@ -334,6 +464,13 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 			5, 0);
 
 	cw.other_browser_cmd_entry = gtk_entry_new();
+#ifdef HILDON
+	/* Disable autocapitalization and dictionary features for the entry */
+	input_mode = hildon_gtk_entry_get_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry));
+	input_mode &= ~(HILDON_GTK_INPUT_MODE_AUTOCAP |
+			HILDON_GTK_INPUT_MODE_DICTIONARY);
+	hildon_gtk_entry_set_input_mode(GTK_ENTRY(cw.other_browser_cmd_entry), input_mode);
+#endif
 	cw.other_browser_cmd_entry_label = gtk_label_new("Command (%s for URI):");
 	gtk_misc_set_alignment(GTK_MISC(cw.other_browser_cmd_entry_label), 1, 0.5);
 	gtk_widget_set_sensitive(cw.other_browser_cmd_entry, FALSE);
@@ -384,6 +521,8 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	gtk_widget_show_all(dialog);
 	return GTK_DIALOG(dialog);
 }
+
+#endif /* defined(HILDON) && defined(FREMANTLE) */
 
 
 /**********************************************************************
@@ -442,4 +581,4 @@ int main(int argc, char *argv[]) {
 
 	exit(0);
 }
-#endif
+#endif /* HILDON_CP_APPLET */

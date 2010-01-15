@@ -1,3 +1,13 @@
+version 3.1:
+* add a new, more finger-friendly GUI for Fremantle, based on work by
+  Faheem Pervez (build UI with EXTRA_CPPFLAGS=-DFREMANTLE)
+* make sure reconfig signal (SIGHUP) doesn't interrupt dispatch of a request
+  when continuous mode is off
+* disable autocapitalization and predictive text features for the
+  other_browser_cmd entry in the UI
+* add support for EXTRA_CPPFLAGS in Makefiles, to allow package builds to pass
+  feature/configuration defines; add EXTRA_LDFLAGS too, just in case
+
 version 3.0:
 * fix the UI so that it looks for C browser-switchboard processes to send
   SIGHUP to, not Python browser-switchboards 

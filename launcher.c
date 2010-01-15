@@ -46,8 +46,8 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 	printf("launch_tear with uri '%s'\n", uri);
 
 	/* We should be able to just call the D-Bus service to open Tear ...
-	   but if Tear's not open, that cuases D-Bus to star Tear and then pass
-	   it the OpenAddress call, which results in two browser windows.
+	   but if Tear's not open, that cuases D-Bus to start Tear and then
+	   pass it the OpenAddress call, which results in two browser windows.
 	   Properly fixing this probably requires Tear to provide a D-Bus
 	   method that opens an address in an existing window, but for now work
 	   around by just invoking Tear with exec() if it's not running. */

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Os $(EXTRA_CFLAGS)
-CPPFLAGS = `pkg-config --cflags dbus-glib-1`
-LDFLAGS = `pkg-config --libs dbus-glib-1`
+CPPFLAGS = `pkg-config --cflags dbus-glib-1` $(EXTRA_CPPFLAGS)
+LDFLAGS = `pkg-config --libs dbus-glib-1` $(EXTRA_LDFLAGS)
 PREFIX = /usr
 
 APP = browser-switchboard

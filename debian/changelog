@@ -1,3 +1,10 @@
+browser-switchboard (3.1-1fremantle1) extras-devel; urgency=low
+
+  * Alpha release for Fremantle.
+  * Pass EXTRA_CPPFLAGS=-DFREMANTLE to make to compile Fremantle-specific code.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 15 Jan 2010 02:52:40 -0800
+
 browser-switchboard (3.1-1) extras-devel; urgency=low
 
   * New "upstream" stable release.

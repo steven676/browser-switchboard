@@ -28,11 +28,84 @@
 #include <sys/wait.h>
 #include <dbus/dbus-glib.h>
 
+#ifdef FREMANTLE
+#include <signal.h>
+#include <dbus/dbus-glib-lowlevel.h>
+#include <dbus/dbus.h>
+#include <sys/inotify.h>
+#include <poll.h>
+#endif
+
 #include "browser-switchboard.h"
 #include "launcher.h"
 #include "dbus-server-bindings.h"
 
 #define LAUNCH_DEFAULT_BROWSER launch_microb
+
+#ifdef FREMANTLE
+static int microb_started = 0;
+static int kill_microb = 0;
+
+/* Check to see whether MicroB is ready to handle D-Bus requests yet
+   See the comments in launch_microb to understand how this works. */
+static DBusHandlerResult check_microb_started(DBusConnection *connection,
+				     DBusMessage *message,
+				     void *user_data) {
+	DBusError error;
+	char *name, *old, *new;
+
+	printf("Checking to see if MicroB is ready\n");
+	dbus_error_init(&error);
+	if (!dbus_message_get_args(message, &error,
+				   DBUS_TYPE_STRING, &name,
+				   DBUS_TYPE_STRING, &old,
+				   DBUS_TYPE_STRING, &new,
+				   DBUS_TYPE_INVALID)) {
+		printf("%s\n", error.message);
+		dbus_error_free(&error);
+		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+	}
+	/* If old is an empty string, then the name has been acquired, and
+	   MicroB should be ready to handle our request */
+	if (strlen(old) == 0) {
+		printf("MicroB ready\n");
+		microb_started = 1;
+	}
+
+	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
+/* Check to see whether the last MicroB window has closed
+   See the comments in launch_microb to understand how this works. */
+static DBusHandlerResult check_microb_finished(DBusConnection *connection,
+				     DBusMessage *message,
+				     void *user_data) {
+	DBusError error;
+	char *name, *old, *new;
+
+	printf("Checking to see if we should kill MicroB\n");
+	/* Check to make sure that the Mozilla.MicroB name is being released,
+	   not acquired -- if it's being acquired, we might be seeing an event
+	   at MicroB startup, in which case killing the browser isn't
+	   appropriate */
+	dbus_error_init(&error);
+	if (!dbus_message_get_args(message, &error,
+				   DBUS_TYPE_STRING, &name,
+				   DBUS_TYPE_STRING, &old,
+				   DBUS_TYPE_STRING, &new,
+				   DBUS_TYPE_INVALID)) {
+		printf("%s\n", error.message);
+		dbus_error_free(&error);
+		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+	}
+	/* If old isn't an empty string, the name is being released, and
+	   we should now kill MicroB */
+	if (strlen(old) > 0)
+		kill_microb = 1;
+
+	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+#endif
 
 static void launch_tear(struct swb_context *ctx, char *uri) {
 	int status;
@@ -79,6 +152,13 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	int kill_browserd = 0;
 	int status;
 	pid_t pid;
+#ifdef FREMANTLE
+	DBusConnection *raw_connection;
+	DBusError dbus_error;
+	DBusHandleMessageFunction filter_func;
+	DBusGProxy *g_proxy;
+	GError *gerror = NULL;
+#endif
 
 	if (!uri)
 		uri = "new_window";
@@ -89,7 +169,11 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	status = system("pidof /usr/sbin/browserd > /dev/null");
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
 		kill_browserd = 1;
+#ifdef FREMANTLE
+		system("/usr/sbin/browserd -d -b");
+#else
 		system("/usr/sbin/browserd -d");
+#endif
 	}
 
 	/* Release the osso_browser D-Bus name so that MicroB can take it */
@@ -99,6 +183,194 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		perror("fork");
 		exit(1);
 	}
+#ifdef FREMANTLE
+	if (pid > 0) {
+		/* Parent process */
+		/* Wait for our child to start the browser UI process and
+		   for it to acquire the com.nokia.osso_browser D-Bus name,
+		   then make the appropriate method call to open the browser
+		   window.
+
+		   Ideas for how to do this monitoring derived from the
+		   dbus-monitor code (tools/dbus-monitor.c in the D-Bus
+		   codebase). */
+		microb_started = 0;
+		dbus_error_init(&dbus_error);
+
+		raw_connection = dbus_bus_get_private(DBUS_BUS_SESSION,
+						      &dbus_error);
+		if (!raw_connection) {
+			fprintf(stderr,
+				"Failed to open connection to session bus: %s\n",
+				dbus_error.message);
+			dbus_error_free(&dbus_error);
+			exit(1);
+		}
+
+		dbus_bus_add_match(raw_connection,
+				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
+				   &dbus_error);
+		if (dbus_error_is_set(&dbus_error)) {
+			fprintf(stderr,
+				"Failed to set up watch for browser UI start: %s\n",
+				dbus_error.message);
+			dbus_error_free(&dbus_error);
+			exit(1);
+		}
+		filter_func = check_microb_started;
+		if (!dbus_connection_add_filter(raw_connection,
+						filter_func, NULL, NULL)) {
+			fprintf(stderr, "Failed to set up watch filter!\n");
+			exit(1);
+		}
+		printf("Waiting for MicroB to start\n");
+		while (!microb_started &&
+		       dbus_connection_read_write_dispatch(raw_connection,
+							   -1));
+		dbus_connection_remove_filter(raw_connection,
+					      filter_func, NULL);
+		dbus_bus_remove_match(raw_connection,
+				      "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
+				      &dbus_error);
+		if (dbus_error_is_set(&dbus_error)) {
+			fprintf(stderr,
+				"Failed to remove watch for browser UI start: %s\n",
+				dbus_error.message);
+			dbus_error_free(&dbus_error);
+			exit(1);
+		}
+
+		/* Browser UI's started, send it the request for a new window
+		   via D-Bus */
+		g_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
+				"com.nokia.osso_browser",
+				"/com/nokia/osso_browser/request",
+				"com.nokia.osso_browser");
+		if (!g_proxy) {
+			printf("Couldn't get a com.nokia.osso_browser proxy\n");
+			exit(1);
+		}
+		if (!strcmp(uri, "new_window")) {
+#if 0 /* Since we can't detect when the bookmark window closes, we'd have a
+	 corner case where, if the user just closes the bookmark window
+	 without opening any browser windows, we don't kill off MicroB or
+	 resume handling com.nokia.osso_browser */
+			if (!dbus_g_proxy_call(g_proxy, "top_application",
+					       &gerror, G_TYPE_INVALID,
+					       G_TYPE_INVALID)) {
+				printf("Opening window failed: %s\n",
+				       gerror->message);
+				exit(1);
+			}
+#endif
+			if (!dbus_g_proxy_call(g_proxy, "load_url",
+					       &gerror,
+					       G_TYPE_STRING, "about:blank",
+					       G_TYPE_INVALID,
+					       G_TYPE_INVALID)) {
+				printf("Opening window failed: %s\n",
+				       gerror->message);
+				exit(1);
+			}
+		} else {
+			if (!dbus_g_proxy_call(g_proxy, "load_url",
+					       &gerror,
+					       G_TYPE_STRING, uri,
+					       G_TYPE_INVALID,
+					       G_TYPE_INVALID)) {
+				printf("Opening window failed: %s\n",
+				       gerror->message);
+				exit(1);
+			}
+		}
+
+		/* Workaround: the browser process we started is going to want
+		   to hang around forever, hogging the com.nokia.osso_browser
+		   D-Bus interface while at it.  To fix this, we notice that
+		   when the last browser window closes, the browser UI restarts
+		   its attached browserd process, which causes an observable
+		   change in the ownership of the Mozilla.MicroB D-Bus name.
+		   Watch for this change and kill off the browser UI process
+		   when it happens.
+
+		   This has the problem of not being able to detect whether
+		   the bookmark window is open and/or in use, but it's the best
+		   that I can think of.  Better suggestions would be greatly
+		   appreciated. */
+		kill_microb = 0;
+		dbus_bus_add_match(raw_connection,
+				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='Mozilla.MicroB'",
+				   &dbus_error);
+		if (dbus_error_is_set(&dbus_error)) {
+			fprintf(stderr,
+				"Failed to set up watch for browserd restart: %s\n",
+				dbus_error.message);
+			dbus_error_free(&dbus_error);
+			exit(1);
+		}
+		/* Maemo 5 PR1.1 seems to have changed the name browserd takes
+		   to com.nokia.microb-engine; look for this too */
+		dbus_bus_add_match(raw_connection,
+				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.microb-engine'",
+				   &dbus_error);
+		if (dbus_error_is_set(&dbus_error)) {
+			fprintf(stderr,
+				"Failed to set up watch for browserd restart: %s\n",
+				dbus_error.message);
+			dbus_error_free(&dbus_error);
+			exit(1);
+		}
+		filter_func = check_microb_finished;
+		if (!dbus_connection_add_filter(raw_connection,
+						filter_func, NULL, NULL)) {
+			fprintf(stderr, "Failed to set up watch filter!\n");
+			exit(1);
+		}
+		while (!kill_microb &&
+		       dbus_connection_read_write_dispatch(raw_connection,
+							   -1));
+		dbus_connection_remove_filter(raw_connection,
+					      filter_func, NULL);
+		dbus_bus_remove_match(raw_connection,
+				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='Mozilla.MicroB'",
+				   &dbus_error);
+		if (dbus_error_is_set(&dbus_error))
+			/* Don't really care -- about to disconnect from the
+			   bus anyhow */
+			dbus_error_free(&dbus_error);
+		dbus_bus_remove_match(raw_connection,
+				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.microb-engine'",
+				   &dbus_error);
+		if (dbus_error_is_set(&dbus_error))
+			dbus_error_free(&dbus_error);
+		dbus_connection_close(raw_connection);
+		dbus_connection_unref(raw_connection);
+
+		/* Tell browser UI to exit nicely */
+		printf("Closing MicroB\n");
+		if (!dbus_g_proxy_call(g_proxy, "exit_browser", &gerror,
+				       G_TYPE_INVALID, G_TYPE_INVALID)) {
+			/* We don't expect a reply; any other error indicates
+			   a problem */
+			if (gerror->domain != DBUS_GERROR ||
+			    gerror->code != DBUS_GERROR_NO_REPLY) {
+				printf("exit_browser failed: %s\n",
+				       gerror->message);
+				exit(1);
+			}
+		}
+		g_object_unref(g_proxy);
+	} else {
+		/* Child process */
+		/* exec maemo-invoker directly instead of relying on the
+		   /usr/bin/browser symlink, since /usr/bin/browser may have
+		   been replaced with a shell script calling us via D-Bus */
+		/* Launch the browser in the background -- our parent will
+		   wait for it to claim the D-Bus name and then display the
+		   window using D-Bus */
+		execl("/usr/bin/maemo-invoker", "browser", (char *)NULL);
+	}
+#else /* !FREMANTLE */
 	if (pid > 0) {
 		/* Parent process */
 		waitpid(pid, &status, 0);
@@ -115,6 +387,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 			      "browser", "--url", uri, (char *)NULL);
 		}
 	}
+#endif /* FREMANTLE */
 
 	/* Kill off browserd if we started it */
 	if (kill_browserd)

@@ -1,3 +1,12 @@
+browser-switchboard (3.1-1fremantle2) extras-devel; urgency=low
+
+  * Alpha release for Fremantle.
+  * Cherry-pick 6b78dde6... ("Initial support for launching MicroB on
+    Fremantle") and associated cleanups.
+  * Revise build system to reflect updated dependencies.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Tue, 02 Feb 2010 02:45:42 -0800
+
 browser-switchboard (3.1-1fremantle1) extras-devel; urgency=low
 
   * Alpha release for Fremantle.

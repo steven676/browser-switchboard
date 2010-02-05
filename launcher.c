@@ -1,7 +1,7 @@
 /*
  * launcher.c -- functions for launching web browsers for browser-switchboard
  *
- * Copyright (C) 2009 Steven Luo
+ * Copyright (C) 2009-2010 Steven Luo
  * Derived from a Python implementation by Jason Simpson and Steven Luo
  *
  * This program is free software; you can redistribute it and/or

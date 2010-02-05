@@ -138,12 +138,23 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 	   around by just invoking Tear with exec() if it's not running. */
 	status = system("pidof tear > /dev/null");
 	if (WIFEXITED(status) && !WEXITSTATUS(status)) {
-		if (!tear_proxy)
-			tear_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
-				       	"com.nokia.tear", "/com/nokia/tear",
-					"com.nokia.Tear");
-		dbus_g_proxy_call(tear_proxy, "OpenAddress", &error,
-				  G_TYPE_STRING, uri, G_TYPE_INVALID);
+		if (!tear_proxy) {
+			if (!(tear_proxy = dbus_g_proxy_new_for_name(
+						ctx->session_bus,
+				       		"com.nokia.tear",
+						"/com/nokia/tear",
+						"com.nokia.Tear"))) {
+				printf("Failed to create proxy for com.nokia.Tear D-Bus interface\n");
+				exit(1);
+			}
+		}
+
+		if (!dbus_g_proxy_call(tear_proxy, "OpenAddress", &error,
+				       G_TYPE_STRING, uri, G_TYPE_INVALID,
+				       G_TYPE_INVALID)) {
+			printf("Opening window failed: %s\n", error->message);
+			exit(1);
+		}
 		if (!ctx->continuous_mode)
 			exit(0);
 	} else {

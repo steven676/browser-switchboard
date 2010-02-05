@@ -26,6 +26,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <dbus/dbus-glib.h>
 
 #ifdef FREMANTLE
@@ -103,6 +105,20 @@ static DBusHandlerResult check_microb_finished(DBusConnection *connection,
 }
 #endif
 
+/* Close stdin/stdout/stderr and replace with /dev/null */
+static int close_stdio(void) {
+	int fd;
+
+	if ((fd = open("/dev/null", O_RDWR)) == -1)
+		return -1;
+
+	if (dup2(fd, 0) == -1 || dup2(fd, 1) == -1 || dup2(fd, 2) == -1)
+		return -1;
+
+	close(fd);
+	return 0;
+}
+
 static void launch_tear(struct swb_context *ctx, char *uri) {
 	int status;
 	static DBusGProxy *tear_proxy = NULL;
@@ -139,6 +155,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 			}
 			/* Child process */
 			setsid();
+			close_stdio();
 		}
 		execl("/usr/bin/tear", "/usr/bin/tear", uri, (char *)NULL);
 	}
@@ -358,6 +375,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		g_object_unref(g_proxy);
 	} else {
 		/* Child process */
+		close_stdio();
+
 		/* exec maemo-invoker directly instead of relying on the
 		   /usr/bin/browser symlink, since /usr/bin/browser may have
 		   been replaced with a shell script calling us via D-Bus */
@@ -372,6 +391,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		waitpid(pid, &status, 0);
 	} else {
 		/* Child process */
+		close_stdio();
+
 		/* exec maemo-invoker directly instead of relying on the
 		   /usr/bin/browser symlink, since /usr/bin/browser may have
 		   been replaced with a shell script calling us via D-Bus */
@@ -467,6 +488,7 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 		}
 		/* Child process */
 		setsid();
+		close_stdio();
 	}
 	execl("/bin/sh", "/bin/sh", "-c", command, (char *)NULL);
 }

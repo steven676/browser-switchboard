@@ -1,3 +1,14 @@
+browser-switchboard (3.1-2fremantle1) extras-devel; urgency=low
+
+  * Alpha release for Fremantle.
+  * No need to lose the tablet-browser-ui dependency on Fremantle.
+  * Cherry-pick d8d8d1ed... ("Close stdin/stdout/stderr in child
+    processes before exec()") and 53ba5ca0... ("Throw away stdout/stderr
+    for browserds we launch too") to make ongoing debugging efforts
+    easier.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 05 Feb 2010 00:13:54 -0800 
+
 browser-switchboard (3.1-2) extras-devel; urgency=low
 
   * Drop the dependency on tablet-browser-ui for Diablo until maemo.org

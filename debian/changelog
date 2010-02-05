@@ -1,3 +1,11 @@
+browser-switchboard (3.1-2) extras-devel; urgency=low
+
+  * Drop the dependency on tablet-browser-ui for Diablo until maemo.org
+    Bugzilla #8806 gets fixed; this was preventing 3.1-1 from reaching
+    extras.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 05 Feb 2010 00:05:27 -0800 
+
 browser-switchboard (3.1-1fremantle2) extras-devel; urgency=low
 
   * Alpha release for Fremantle.

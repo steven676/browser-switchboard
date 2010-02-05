@@ -8,7 +8,7 @@ XSBC-Bugtracker: https://garage.maemo.org/tracker/?group_id=1159
 
 Package: browser-switchboard
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, dbus, tablet-browser-ui
+Depends: ${shlibs:Depends}, ${misc:Depends}, dbus
 Recommends: tear | fennec | midori
 Provides: browser-proxy
 Conflicts: browser-proxy, fennec-dbus-client

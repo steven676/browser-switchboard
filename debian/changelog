@@ -1,3 +1,13 @@
+browser-switchboard (3.1-2fremantle2) extras-devel; urgency=low
+
+  * Alpha release for Fremantle.
+  * Cherry-pick 5b7e4808... ("Make sure a running browserd is detected
+    correctly on all devices").
+  * Cherry-pick 88db9429... ("Kill MicroB browser UI processes instead
+    of using exit_browser").
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sat, 06 Feb 2010 03:10:16 -0800 
+
 browser-switchboard (3.1-2fremantle1) extras-devel; urgency=low
 
   * Alpha release for Fremantle.

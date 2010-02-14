@@ -32,7 +32,14 @@
 
 #ifdef FREMANTLE
 #include <dbus/dbus.h>
+#include <errno.h>
 #include <signal.h>
+#include <sys/ptrace.h>
+#include <sys/inotify.h>
+
+#define DEFAULT_HOMEDIR "/home/user"
+#define MICROB_PROFILE_DIR "/.mozilla/microb"
+#define MICROB_LOCKFILE "lock"
 #endif
 
 #include "browser-switchboard.h"
@@ -43,7 +50,6 @@
 
 #ifdef FREMANTLE
 static int microb_started = 0;
-static int kill_microb = 0;
 
 /* Check to see whether MicroB is ready to handle D-Bus requests yet
    See the comments in launch_microb to understand how this works. */
@@ -74,35 +80,20 @@ static DBusHandlerResult check_microb_started(DBusConnection *connection,
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
-/* Check to see whether the last MicroB window has closed
-   See the comments in launch_microb to understand how this works. */
-static DBusHandlerResult check_microb_finished(DBusConnection *connection,
-				     DBusMessage *message,
-				     void *user_data) {
-	DBusError error;
-	char *name, *old, *new;
+/* Get a browserd PID from the corresponding Mozilla profile lockfile */
+static pid_t get_browserd_pid(const char *lockfile) {
+	char buf[256], *tmp;
 
-	printf("Checking to see if we should kill MicroB\n");
-	/* Check to make sure that the Mozilla.MicroB name is being released,
-	   not acquired -- if it's being acquired, we might be seeing an event
-	   at MicroB startup, in which case killing the browser isn't
-	   appropriate */
-	dbus_error_init(&error);
-	if (!dbus_message_get_args(message, &error,
-				   DBUS_TYPE_STRING, &name,
-				   DBUS_TYPE_STRING, &old,
-				   DBUS_TYPE_STRING, &new,
-				   DBUS_TYPE_INVALID)) {
-		printf("%s\n", error.message);
-		dbus_error_free(&error);
-		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-	}
-	/* If old isn't an empty string, the name is being released, and
-	   we should now kill MicroB */
-	if (strlen(old) > 0)
-		kill_microb = 1;
+	/* The lockfile is a symlink pointing to "[ipaddr]:+[pid]", so read in
+	   the target of the symlink and parse it that way */
+	memset(buf, '\0', 256);
+	if (readlink(lockfile, buf, 255) == -1)
+		return -errno;
+	if (!(tmp = strstr(buf, ":+")))
+		return 0;
+	tmp += 2; /* Skip over the ":+" */
 
-	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+	return atoi(tmp);
 }
 #endif
 
@@ -167,11 +158,20 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	int status;
 	pid_t pid;
 #ifdef FREMANTLE
+	char *homedir, *microb_profile_dir, *microb_lockfile;
+	size_t len;
+	int fd, inot_wd;
 	DBusConnection *raw_connection;
 	DBusError dbus_error;
 	DBusHandleMessageFunction filter_func;
 	DBusGProxy *g_proxy;
 	GError *gerror = NULL;
+	int bytes_read;
+	char buf[256], *pos;
+	struct inotify_event *event;
+	pid_t browserd_pid, waited_pid;
+	struct sigaction act, oldact;
+	int ignore_sigstop;
 #endif
 
 	if (!uri)
@@ -198,6 +198,40 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		exit(1);
 	}
 #ifdef FREMANTLE
+	/* Put together the path to the MicroB browserd lockfile */
+	if (!(homedir = getenv("HOME")))
+		homedir = DEFAULT_HOMEDIR;
+	len = strlen(homedir) + strlen(MICROB_PROFILE_DIR) + 1;
+	if (!(microb_profile_dir = calloc(len, sizeof(char)))) {
+		printf("calloc() failed\n");
+		exit(1);
+	}
+	snprintf(microb_profile_dir, len, "%s%s",
+		 homedir, MICROB_PROFILE_DIR);
+	len = strlen(homedir) + strlen(MICROB_PROFILE_DIR) +
+	      strlen("/") + strlen(MICROB_LOCKFILE) + 1;
+	if (!(microb_lockfile = calloc(len, sizeof(char)))) {
+		printf("calloc() failed\n");
+		exit(1);
+	}
+	snprintf(microb_lockfile, len, "%s%s/%s",
+		 homedir, MICROB_PROFILE_DIR, MICROB_LOCKFILE);
+
+	/* Watch for the creation of a MicroB browserd lockfile
+	   NB: The watch has to be set up here, before the browser
+	   is launched, to make sure there's no race between browserd
+	   starting and us creating the watch */
+	if ((fd = inotify_init()) == -1) {
+		perror("inotify_init");
+		exit(1);
+	}
+	if ((inot_wd = inotify_add_watch(fd, microb_profile_dir,
+					 IN_CREATE)) == -1) {
+		perror("inotify_add_watch");
+		exit(1);
+	}
+	free(microb_profile_dir);
+
 	if (pid > 0) {
 		/* Parent process */
 		/* Wait for our child to start the browser UI process and
@@ -246,13 +280,12 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		dbus_bus_remove_match(raw_connection,
 				      "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
 				      &dbus_error);
-		if (dbus_error_is_set(&dbus_error)) {
-			fprintf(stderr,
-				"Failed to remove watch for browser UI start: %s\n",
-				dbus_error.message);
+		if (dbus_error_is_set(&dbus_error))
+			/* Don't really care -- about to disconnect from the
+			   bus anyhow */
 			dbus_error_free(&dbus_error);
-			exit(1);
-		}
+		dbus_connection_close(raw_connection);
+		dbus_connection_unref(raw_connection);
 
 		/* Browser UI's started, send it the request for a new window
 		   via D-Bus */
@@ -303,70 +336,125 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		   to hang around forever, hogging the com.nokia.osso_browser
 		   D-Bus interface while at it.  To fix this, we notice that
 		   when the last browser window closes, the browser UI restarts
-		   its attached browserd process, which causes an observable
-		   change in the ownership of the Mozilla.MicroB D-Bus name.
-		   Watch for this change and kill off the browser UI process
-		   when it happens.
+		   its attached browserd process.  Get the browserd process's
+		   PID and use ptrace() to watch for process termination.
 
 		   This has the problem of not being able to detect whether
 		   the bookmark window is open and/or in use, but it's the best
 		   that I can think of.  Better suggestions would be greatly
 		   appreciated. */
-		kill_microb = 0;
-		dbus_bus_add_match(raw_connection,
-				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='Mozilla.MicroB'",
-				   &dbus_error);
-		if (dbus_error_is_set(&dbus_error)) {
-			fprintf(stderr,
-				"Failed to set up watch for browserd restart: %s\n",
-				dbus_error.message);
-			dbus_error_free(&dbus_error);
+
+		/* Wait for the MicroB browserd lockfile to be created */
+		printf("Waiting for browserd lockfile to be created\n");
+		memset(buf, '\0', 256);
+		/* read() blocks until there are events to be read */
+		while ((bytes_read = read(fd, buf, 255)) > 0) {
+			pos = buf;
+			/* Loop until we see the event we're looking for
+			   or until all the events are processed */
+			while (pos && (pos-buf) < bytes_read) {
+				event = (struct inotify_event *)pos;
+				len = sizeof(struct inotify_event)
+				      + event->len;
+				if (!strcmp(MICROB_LOCKFILE,
+					    event->name)) {
+					/* Lockfile created */
+					pos = NULL;
+					break;
+				} else if ((pos-buf) + len < bytes_read)
+					/* More events to process */
+					pos += len;
+				else
+					/* All events processed */
+					pos = buf + bytes_read;
+			}
+			if (!pos)
+				/* Event found, stop looking */
+				break;
+			memset(buf, '\0', 256);
+                }
+		inotify_rm_watch(fd, inot_wd);
+		close(fd);
+
+		/* Get the PID of the browserd from the lockfile */
+		if ((browserd_pid = get_browserd_pid(microb_lockfile)) <= 0) {
+			if (browserd_pid == 0)
+				printf("Profile lockfile link lacks PID\n");
+			else
+				printf("readlink() on lockfile failed: %s\n",
+				       strerror(-browserd_pid));
 			exit(1);
 		}
-		/* Maemo 5 PR1.1 seems to have changed the name browserd takes
-		   to com.nokia.microb-engine; look for this too */
-		dbus_bus_add_match(raw_connection,
-				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.microb-engine'",
-				   &dbus_error);
-		if (dbus_error_is_set(&dbus_error)) {
-			fprintf(stderr,
-				"Failed to set up watch for browserd restart: %s\n",
-				dbus_error.message);
-			dbus_error_free(&dbus_error);
+		free(microb_lockfile);
+
+		/* Wait for the browserd to close */
+		printf("Waiting for MicroB (browserd pid %d) to finish\n",
+		       browserd_pid);
+		/* Clear any existing SIGCHLD handler to prevent interference
+		   with our wait() */
+		act.sa_handler = SIG_DFL;
+		act.sa_flags = 0;
+		sigemptyset(&(act.sa_mask));
+		if (sigaction(SIGCHLD, &act, &oldact) == -1) {
+			perror("clearing SIGCHLD handler failed");
 			exit(1);
 		}
-		filter_func = check_microb_finished;
-		if (!dbus_connection_add_filter(raw_connection,
-						filter_func, NULL, NULL)) {
-			fprintf(stderr, "Failed to set up watch filter!\n");
+
+		/* Trace the browserd to get a close notification */
+		ignore_sigstop = 1;
+		if (ptrace(PTRACE_ATTACH, browserd_pid, NULL, NULL) == -1) {
+			perror("PTRACE_ATTACH");
 			exit(1);
 		}
-		while (!kill_microb &&
-		       dbus_connection_read_write_dispatch(raw_connection,
-							   -1));
-		dbus_connection_remove_filter(raw_connection,
-					      filter_func, NULL);
-		dbus_bus_remove_match(raw_connection,
-				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='Mozilla.MicroB'",
-				   &dbus_error);
-		if (dbus_error_is_set(&dbus_error))
-			/* Don't really care -- about to disconnect from the
-			   bus anyhow */
-			dbus_error_free(&dbus_error);
-		dbus_bus_remove_match(raw_connection,
-				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.microb-engine'",
-				   &dbus_error);
-		if (dbus_error_is_set(&dbus_error))
-			dbus_error_free(&dbus_error);
-		dbus_connection_close(raw_connection);
-		dbus_connection_unref(raw_connection);
+		ptrace(PTRACE_CONT, browserd_pid, NULL, NULL);
+		while ((waited_pid = wait(&status)) > 0) {
+			if (waited_pid != browserd_pid)
+				/* Not interested in other processes */
+				continue;
+			if (WIFEXITED(status) || WIFSIGNALED(status))
+				/* browserd exited */
+				break;
+			else if (WIFSTOPPED(status)) {
+				/* browserd was sent a signal
+				   We're responsible for making sure this
+				   signal gets delivered */
+				if (ignore_sigstop &&
+				    WSTOPSIG(status) == SIGSTOP) {
+					/* Ignore the first SIGSTOP received
+					   This is raised for some reason
+					   immediately after we start tracing
+					   the process, and won't be followed
+					   by a SIGCONT at any point */
+					printf("Ignoring first SIGSTOP\n");
+					ptrace(PTRACE_CONT, browserd_pid,
+					       NULL, NULL);
+					ignore_sigstop = 0;
+					continue;
+				}
+				printf("Forwarding signal %d to browserd\n",
+				       WSTOPSIG(status));
+				ptrace(PTRACE_CONT, browserd_pid,
+				       NULL, WSTOPSIG(status));
+			}
+		}
 
 		/* Kill off browser UI
+		   XXX: There is a race here with the restarting of the closed
+		   browserd; if that happens before we kill the browser UI, the
+		   newly started browserd may not close with the UI
 		   XXX: Hope we don't cause data loss here! */
 		printf("Killing MicroB\n");
 		kill(pid, SIGTERM);
+		waitpid(pid, &status, 0);
+
+		/* Restore old SIGCHLD handler */
+		if (sigaction(SIGCHLD, &oldact, NULL) == -1) {
+			perror("restoring old SIGCHLD handler failed");
+			exit(1);
+		}
 	} else {
 		/* Child process */
+		close(fd);
 		close_stdio();
 
 		/* exec maemo-invoker directly instead of relying on the

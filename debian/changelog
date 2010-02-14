@@ -1,3 +1,11 @@
+browser-switchboard (3.1-2fremantle3) extras-devel; urgency=low
+
+  * Alpha release for Fremantle.
+  * Cherry-pick e7bb0f3e... ("Take a different approach to detecting MicroB
+    browser window close").
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sat, 13 Feb 2010 21:07:56 -0800 
+
 browser-switchboard (3.1-2fremantle2) extras-devel; urgency=low
 
   * Alpha release for Fremantle.

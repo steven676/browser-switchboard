@@ -103,6 +103,7 @@ int main() {
 	OssoBrowser *obj_osso_browser, *obj_osso_browser_req;
 	GMainLoop *mainloop;
 	GError *error = NULL;
+	int reqname_result;
 
 	read_config(0);
 
@@ -143,6 +144,27 @@ int main() {
 			"org.freedesktop.DBus");
 	if (!ctx.dbus_proxy) {
 		printf("Couldn't get an org.freedesktop.DBus proxy\n");
+		return 1;
+	}
+
+	/* Get the org.maemo.garage.browser-switchboard name from D-Bus, as
+	   a form of locking to ensure that not more than one
+	   browser-switchboard process is active at any time.  With
+	   DBUS_NAME_FLAG_DO_NOT_QUEUE set and DBUS_NAME_FLAG_REPLACE_EXISTING
+	   not set, getting the name succeeds if and only if no other
+	   process owns the name. */
+	if (!dbus_g_proxy_call(ctx.dbus_proxy, "RequestName", &error,
+			       G_TYPE_STRING, "org.maemo.garage.browser-switchboard",
+			       G_TYPE_UINT, DBUS_NAME_FLAG_DO_NOT_QUEUE,
+			       G_TYPE_INVALID,
+			       G_TYPE_UINT, &reqname_result,
+			       G_TYPE_INVALID)) {
+		printf("Couldn't acquire browser-switchboard lock: %s\n",
+		       error->message);
+		return 1;
+	}
+	if (reqname_result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {  
+		printf("Another browser-switchboard already running\n");
 		return 1;
 	}
 

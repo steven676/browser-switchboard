@@ -239,6 +239,41 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	}
 	free(microb_profile_dir);
 
+	/* Set up the D-Bus eavesdropping we'll use to watch for MicroB
+	   acquiring the com.nokia.osso_browser D-Bus name.  Again, this needs
+	   to happen before the browser is launched, so that there's no race
+	   between establishing the watch and browser startup.
+
+	   Ideas for how to do this monitoring derived from the dbus-monitor
+	   code (tools/dbus-monitor.c in the D-Bus codebase). */
+	dbus_error_init(&dbus_error);
+
+	raw_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &dbus_error);
+	if (!raw_connection) {
+		fprintf(stderr,
+			"Failed to open connection to session bus: %s\n",
+			dbus_error.message);
+		dbus_error_free(&dbus_error);
+		exit(1);
+	}
+
+	dbus_bus_add_match(raw_connection,
+			   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
+			   &dbus_error);
+	if (dbus_error_is_set(&dbus_error)) {
+		fprintf(stderr,
+			"Failed to set up watch for browser UI start: %s\n",
+			dbus_error.message);
+		dbus_error_free(&dbus_error);
+		exit(1);
+	}
+	filter_func = check_microb_started;
+	if (!dbus_connection_add_filter(raw_connection,
+					filter_func, NULL, NULL)) {
+		fprintf(stderr, "Failed to set up watch filter!\n");
+		exit(1);
+	}
+
 	if ((pid = fork()) == -1) {
 		perror("fork");
 		exit(1);
@@ -249,40 +284,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		/* Wait for our child to start the browser UI process and
 		   for it to acquire the com.nokia.osso_browser D-Bus name,
 		   then make the appropriate method call to open the browser
-		   window.
-
-		   Ideas for how to do this monitoring derived from the
-		   dbus-monitor code (tools/dbus-monitor.c in the D-Bus
-		   codebase). */
+		   window. */
 		microb_started = 0;
-		dbus_error_init(&dbus_error);
-
-		raw_connection = dbus_bus_get_private(DBUS_BUS_SESSION,
-						      &dbus_error);
-		if (!raw_connection) {
-			fprintf(stderr,
-				"Failed to open connection to session bus: %s\n",
-				dbus_error.message);
-			dbus_error_free(&dbus_error);
-			exit(1);
-		}
-
-		dbus_bus_add_match(raw_connection,
-				   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
-				   &dbus_error);
-		if (dbus_error_is_set(&dbus_error)) {
-			fprintf(stderr,
-				"Failed to set up watch for browser UI start: %s\n",
-				dbus_error.message);
-			dbus_error_free(&dbus_error);
-			exit(1);
-		}
-		filter_func = check_microb_started;
-		if (!dbus_connection_add_filter(raw_connection,
-						filter_func, NULL, NULL)) {
-			fprintf(stderr, "Failed to set up watch filter!\n");
-			exit(1);
-		}
 		printf("Waiting for MicroB to start\n");
 		while (!microb_started &&
 		       dbus_connection_read_write_dispatch(raw_connection,
@@ -466,6 +469,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		}
 	} else {
 		/* Child process */
+		dbus_connection_close(raw_connection);
+		dbus_connection_unref(raw_connection);
 		close(fd);
 		close_stdio();
 

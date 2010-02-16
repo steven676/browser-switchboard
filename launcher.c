@@ -381,7 +381,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 					pos += len;
 				else
 					/* All events processed */
-					pos = buf + bytes_read;
+					break;
 			}
 			if (!pos)
 				/* Event found, stop looking */

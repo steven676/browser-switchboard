@@ -1,3 +1,15 @@
+browser-switchboard (3.1-2fremantle4) extras-devel; urgency=low
+
+  * Alpha release for Fremantle.
+  * Cherry-pick 870b63f0... ("Install the inotify watch for lockfile creation
+    before forking").
+  * Cherry-pick a712d8d7... ("Avoid a race between MicroB startup and
+    establishing D-Bus watch for it").
+  * Cherry-pick 32801150... ("Ensure that only one browser-switchboard is
+    active at any time").
+
+ -- Steven Luo <steven+maemo@steven676.net>  Mon, 15 Feb 2010 18:57:46 -0800 
+
 browser-switchboard (3.1-2fremantle3) extras-devel; urgency=low
 
   * Alpha release for Fremantle.

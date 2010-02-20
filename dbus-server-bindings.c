@@ -81,6 +81,15 @@ static void open_address(const char *uri) {
 		   we need to clean up after ourselves */
 		free(new_uri);
 	} else {
+#ifdef FREMANTLE
+		if (!strcmp(uri, "http://link.ovi.mobi/n900ovistore")) {
+			/* Ovi Store webpage will not open correctly in
+			   any browser other than MicroB, so force the
+			   link in the provided bookmark to open in MicroB */
+			launch_microb(&ctx, (char *)uri);
+			return;
+		}
+#endif
 		launch_browser(&ctx, (char *)uri);
 	}
 }

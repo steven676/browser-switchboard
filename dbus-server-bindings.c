@@ -29,6 +29,7 @@
 #include "browser-switchboard.h"
 #include "launcher.h"
 #include "dbus-server-bindings.h"
+#include "log.h"
 
 extern struct swb_context ctx;
 
@@ -67,7 +68,7 @@ static void open_address(const char *uri) {
 		/* Not much to do in this case ... */
 		return;
 
-	printf("open_address '%s'\n", uri);
+	log_msg("open_address '%s'\n", uri);
 	if (uri[0] == '/') {
 		/* URI begins with a '/' -- assume it points to a local file
 		   and prefix with "file://" */
@@ -155,11 +156,11 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 			       G_TYPE_INVALID,
 			       G_TYPE_UINT, &result,
 			       G_TYPE_INVALID)) {
-		printf("Couldn't acquire name com.nokia.osso_browser\n");
+		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
 	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {	
-		printf("Couldn't acquire name com.nokia.osso_browser\n");
+		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
 }

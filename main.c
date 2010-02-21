@@ -22,7 +22,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -32,6 +31,7 @@
 #include "launcher.h"
 #include "dbus-server-bindings.h"
 #include "configfile.h"
+#include "log.h"
 
 struct swb_context ctx;
 
@@ -46,7 +46,7 @@ static void set_config_defaults(struct swb_context *ctx) {
 
 static void waitforzombies(int signalnum) {
 	while (waitpid(-1, NULL, WNOHANG) > 0)
-		printf("Waited for a zombie\n");
+		log_msg("Waited for a zombie\n");
 }
 
 static void read_config(int signalnum) {
@@ -87,9 +87,11 @@ static void read_config(int signalnum) {
 	}
 	parse_config_file_end();
 
-	printf("continuous_mode: %d\n", ctx.continuous_mode);
-	printf("default_browser: '%s'\n", default_browser?default_browser:"NULL");
-	printf("other_browser_cmd: '%s'\n", ctx.other_browser_cmd?ctx.other_browser_cmd:"NULL");
+	log_msg("continuous_mode: %d\n", ctx.continuous_mode);
+	log_msg("default_browser: '%s'\n",
+		default_browser?default_browser:"NULL");
+	log_msg("other_browser_cmd: '%s'\n",
+		ctx.other_browser_cmd?ctx.other_browser_cmd:"NULL");
 
 out:
 	fclose(fp);
@@ -116,14 +118,14 @@ int main() {
 		/* SIGCHLD -- clean up after zombies */
 		act.sa_handler = waitforzombies;
 		if (sigaction(SIGCHLD, &act, NULL) == -1) {
-			printf("Installing signal handler failed\n");
+			log_msg("Installing signal handler failed\n");
 			return 1;
 		}
 
 		/* SIGHUP -- reread config file */
 		act.sa_handler = read_config;
 		if (sigaction(SIGHUP, &act, NULL) == -1) {
-			printf("Installing signal handler failed\n");
+			log_msg("Installing signal handler failed\n");
 			return 1;
 		}
 	}
@@ -136,14 +138,14 @@ int main() {
 	/* Get a connection to the D-Bus session bus */
 	ctx.session_bus = dbus_g_bus_get(DBUS_BUS_SESSION, &error);
 	if (!ctx.session_bus) {
-		printf("Couldn't get a D-Bus bus connection\n");
+		log_msg("Couldn't get a D-Bus bus connection\n");
 		return 1;
 	}
 	ctx.dbus_proxy = dbus_g_proxy_new_for_name(ctx.session_bus,
 			"org.freedesktop.DBus", "/org/freedesktop/DBus",
 			"org.freedesktop.DBus");
 	if (!ctx.dbus_proxy) {
-		printf("Couldn't get an org.freedesktop.DBus proxy\n");
+		log_msg("Couldn't get an org.freedesktop.DBus proxy\n");
 		return 1;
 	}
 
@@ -159,12 +161,12 @@ int main() {
 			       G_TYPE_INVALID,
 			       G_TYPE_UINT, &reqname_result,
 			       G_TYPE_INVALID)) {
-		printf("Couldn't acquire browser-switchboard lock: %s\n",
-		       error->message);
+		log_msg("Couldn't acquire browser-switchboard lock: %s\n",
+			error->message);
 		return 1;
 	}
 	if (reqname_result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {  
-		printf("Another browser-switchboard already running\n");
+		log_msg("Another browser-switchboard already running\n");
 		return 1;
 	}
 
@@ -180,9 +182,9 @@ int main() {
 			G_OBJECT(obj_osso_browser_req));
 
 	mainloop = g_main_loop_new(NULL, FALSE);
-	printf("Starting main loop\n");
+	log_msg("Starting main loop\n");
 	g_main_loop_run(mainloop);
-	printf("Main loop completed\n");
+	log_msg("Main loop completed\n");
 
 	return 0;
 }

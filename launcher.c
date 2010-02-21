@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -32,7 +33,6 @@
 
 #ifdef FREMANTLE
 #include <dbus/dbus.h>
-#include <errno.h>
 #include <signal.h>
 #include <sys/ptrace.h>
 #include <sys/inotify.h>
@@ -45,6 +45,7 @@
 #include "browser-switchboard.h"
 #include "launcher.h"
 #include "dbus-server-bindings.h"
+#include "log.h"
 
 #define LAUNCH_DEFAULT_BROWSER launch_microb
 
@@ -59,21 +60,21 @@ static DBusHandlerResult check_microb_started(DBusConnection *connection,
 	DBusError error;
 	char *name, *old, *new;
 
-	printf("Checking to see if MicroB is ready\n");
+	log_msg("Checking to see if MicroB is ready\n");
 	dbus_error_init(&error);
 	if (!dbus_message_get_args(message, &error,
 				   DBUS_TYPE_STRING, &name,
 				   DBUS_TYPE_STRING, &old,
 				   DBUS_TYPE_STRING, &new,
 				   DBUS_TYPE_INVALID)) {
-		printf("%s\n", error.message);
+		log_msg("%s\n", error.message);
 		dbus_error_free(&error);
 		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 	}
 	/* If old is an empty string, then the name has been acquired, and
 	   MicroB should be ready to handle our request */
 	if (strlen(old) == 0) {
-		printf("MicroB ready\n");
+		log_msg("MicroB ready\n");
 		microb_started = 1;
 	}
 
@@ -120,7 +121,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 	if (!uri)
 		uri = "new_window";
 
-	printf("launch_tear with uri '%s'\n", uri);
+	log_msg("launch_tear with uri '%s'\n", uri);
 
 	/* We should be able to just call the D-Bus service to open Tear ...
 	   but if Tear's not open, that cuases D-Bus to start Tear and then
@@ -136,7 +137,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 				       		"com.nokia.tear",
 						"/com/nokia/tear",
 						"com.nokia.Tear"))) {
-				printf("Failed to create proxy for com.nokia.Tear D-Bus interface\n");
+				log_msg("Failed to create proxy for com.nokia.Tear D-Bus interface\n");
 				exit(1);
 			}
 		}
@@ -144,7 +145,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 		if (!dbus_g_proxy_call(tear_proxy, "OpenAddress", &error,
 				       G_TYPE_STRING, uri, G_TYPE_INVALID,
 				       G_TYPE_INVALID)) {
-			printf("Opening window failed: %s\n", error->message);
+			log_msg("Opening window failed: %s\n", error->message);
 			exit(1);
 		}
 		if (!ctx->continuous_mode)
@@ -153,7 +154,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 		if (ctx->continuous_mode) {
 			if ((pid = fork()) != 0) {
 				/* Parent process or error in fork() */
-				printf("child: %d\n", (int)pid);
+				log_msg("child: %d\n", (int)pid);
 				return;
 			}
 			/* Child process */
@@ -188,7 +189,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	if (!uri)
 		uri = "new_window";
 
-	printf("launch_microb with uri '%s'\n", uri);
+	log_msg("launch_microb with uri '%s'\n", uri);
 
 	/* Launch browserd if it's not running */
 	status = system("pidof browserd > /dev/null");
@@ -210,7 +211,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		homedir = DEFAULT_HOMEDIR;
 	len = strlen(homedir) + strlen(MICROB_PROFILE_DIR) + 1;
 	if (!(microb_profile_dir = calloc(len, sizeof(char)))) {
-		printf("calloc() failed\n");
+		log_msg("calloc() failed\n");
 		exit(1);
 	}
 	snprintf(microb_profile_dir, len, "%s%s",
@@ -218,7 +219,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	len = strlen(homedir) + strlen(MICROB_PROFILE_DIR) +
 	      strlen("/") + strlen(MICROB_LOCKFILE) + 1;
 	if (!(microb_lockfile = calloc(len, sizeof(char)))) {
-		printf("calloc() failed\n");
+		log_msg("calloc() failed\n");
 		exit(1);
 	}
 	snprintf(microb_lockfile, len, "%s%s/%s",
@@ -229,12 +230,12 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	   is launched, to make sure there's no race between browserd
 	   starting and us creating the watch */
 	if ((fd = inotify_init()) == -1) {
-		perror("inotify_init");
+		log_perror(errno, "inotify_init");
 		exit(1);
 	}
 	if ((inot_wd = inotify_add_watch(fd, microb_profile_dir,
 					 IN_CREATE)) == -1) {
-		perror("inotify_add_watch");
+		log_perror(errno, "inotify_add_watch");
 		exit(1);
 	}
 	free(microb_profile_dir);
@@ -250,8 +251,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 
 	raw_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &dbus_error);
 	if (!raw_connection) {
-		fprintf(stderr,
-			"Failed to open connection to session bus: %s\n",
+		log_msg("Failed to open connection to session bus: %s\n",
 			dbus_error.message);
 		dbus_error_free(&dbus_error);
 		exit(1);
@@ -261,8 +261,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 			   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
 			   &dbus_error);
 	if (dbus_error_is_set(&dbus_error)) {
-		fprintf(stderr,
-			"Failed to set up watch for browser UI start: %s\n",
+		log_msg("Failed to set up watch for browser UI start: %s\n",
 			dbus_error.message);
 		dbus_error_free(&dbus_error);
 		exit(1);
@@ -270,12 +269,12 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	filter_func = check_microb_started;
 	if (!dbus_connection_add_filter(raw_connection,
 					filter_func, NULL, NULL)) {
-		fprintf(stderr, "Failed to set up watch filter!\n");
+		log_msg("Failed to set up watch filter!\n");
 		exit(1);
 	}
 
 	if ((pid = fork()) == -1) {
-		perror("fork");
+		log_perror(errno, "fork");
 		exit(1);
 	}
 
@@ -286,7 +285,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		   then make the appropriate method call to open the browser
 		   window. */
 		microb_started = 0;
-		printf("Waiting for MicroB to start\n");
+		log_msg("Waiting for MicroB to start\n");
 		while (!microb_started &&
 		       dbus_connection_read_write_dispatch(raw_connection,
 							   -1));
@@ -309,7 +308,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 				"/com/nokia/osso_browser/request",
 				"com.nokia.osso_browser");
 		if (!g_proxy) {
-			printf("Couldn't get a com.nokia.osso_browser proxy\n");
+			log_msg("Couldn't get a com.nokia.osso_browser proxy\n");
 			exit(1);
 		}
 		if (!strcmp(uri, "new_window")) {
@@ -320,8 +319,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 			if (!dbus_g_proxy_call(g_proxy, "top_application",
 					       &gerror, G_TYPE_INVALID,
 					       G_TYPE_INVALID)) {
-				printf("Opening window failed: %s\n",
-				       gerror->message);
+				log_msg("Opening window failed: %s\n",
+					gerror->message);
 				exit(1);
 			}
 #endif
@@ -330,8 +329,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 					       G_TYPE_STRING, "about:blank",
 					       G_TYPE_INVALID,
 					       G_TYPE_INVALID)) {
-				printf("Opening window failed: %s\n",
-				       gerror->message);
+				log_msg("Opening window failed: %s\n",
+					gerror->message);
 				exit(1);
 			}
 		} else {
@@ -340,8 +339,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 					       G_TYPE_STRING, uri,
 					       G_TYPE_INVALID,
 					       G_TYPE_INVALID)) {
-				printf("Opening window failed: %s\n",
-				       gerror->message);
+				log_msg("Opening window failed: %s\n",
+					gerror->message);
 				exit(1);
 			}
 		}
@@ -360,7 +359,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		   appreciated. */
 
 		/* Wait for the MicroB browserd lockfile to be created */
-		printf("Waiting for browserd lockfile to be created\n");
+		log_msg("Waiting for browserd lockfile to be created\n");
 		memset(buf, '\0', 256);
 		/* read() blocks until there are events to be read */
 		while ((bytes_read = read(fd, buf, 255)) > 0) {
@@ -394,31 +393,31 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		/* Get the PID of the browserd from the lockfile */
 		if ((browserd_pid = get_browserd_pid(microb_lockfile)) <= 0) {
 			if (browserd_pid == 0)
-				printf("Profile lockfile link lacks PID\n");
+				log_msg("Profile lockfile link lacks PID\n");
 			else
-				printf("readlink() on lockfile failed: %s\n",
-				       strerror(-browserd_pid));
+				log_perror(-browserd_pid,
+					   "readlink() on lockfile failed");
 			exit(1);
 		}
 		free(microb_lockfile);
 
 		/* Wait for the browserd to close */
-		printf("Waiting for MicroB (browserd pid %d) to finish\n",
-		       browserd_pid);
+		log_msg("Waiting for MicroB (browserd pid %d) to finish\n",
+			browserd_pid);
 		/* Clear any existing SIGCHLD handler to prevent interference
 		   with our wait() */
 		act.sa_handler = SIG_DFL;
 		act.sa_flags = 0;
 		sigemptyset(&(act.sa_mask));
 		if (sigaction(SIGCHLD, &act, &oldact) == -1) {
-			perror("clearing SIGCHLD handler failed");
+			log_perror(errno, "clearing SIGCHLD handler failed");
 			exit(1);
 		}
 
 		/* Trace the browserd to get a close notification */
 		ignore_sigstop = 1;
 		if (ptrace(PTRACE_ATTACH, browserd_pid, NULL, NULL) == -1) {
-			perror("PTRACE_ATTACH");
+			log_perror(errno, "PTRACE_ATTACH");
 			exit(1);
 		}
 		ptrace(PTRACE_CONT, browserd_pid, NULL, NULL);
@@ -440,14 +439,14 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 					   immediately after we start tracing
 					   the process, and won't be followed
 					   by a SIGCONT at any point */
-					printf("Ignoring first SIGSTOP\n");
+					log_msg("Ignoring first SIGSTOP\n");
 					ptrace(PTRACE_CONT, browserd_pid,
 					       NULL, NULL);
 					ignore_sigstop = 0;
 					continue;
 				}
-				printf("Forwarding signal %d to browserd\n",
-				       WSTOPSIG(status));
+				log_msg("Forwarding signal %d to browserd\n",
+					WSTOPSIG(status));
 				ptrace(PTRACE_CONT, browserd_pid,
 				       NULL, WSTOPSIG(status));
 			}
@@ -458,13 +457,14 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		   browserd; if that happens before we kill the browser UI, the
 		   newly started browserd may not close with the UI
 		   XXX: Hope we don't cause data loss here! */
-		printf("Killing MicroB\n");
+		log_msg("Killing MicroB\n");
 		kill(pid, SIGTERM);
 		waitpid(pid, &status, 0);
 
 		/* Restore old SIGCHLD handler */
 		if (sigaction(SIGCHLD, &oldact, NULL) == -1) {
-			perror("restoring old SIGCHLD handler failed");
+			log_perror(errno,
+				   "restoring old SIGCHLD handler failed");
 			exit(1);
 		}
 	} else {
@@ -484,7 +484,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	}
 #else /* !FREMANTLE */
 	if ((pid = fork()) == -1) {
-		perror("fork");
+		log_perror(errno, "fork");
 		exit(1);
 	}
 
@@ -529,7 +529,7 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 	if (!uri || !strcmp(uri, "new_window"))
 		uri = "";
 
-	printf("launch_other_browser with uri '%s'\n", uri);
+	log_msg("launch_other_browser with uri '%s'\n", uri);
 
 	if ((urilen = strlen(uri)) > 0) {
 		/* Quote the URI to prevent the shell from interpreting it */
@@ -578,7 +578,7 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 	if (!(command = calloc(cmdlen+urilen+1, sizeof(char))))
 		exit(1);
 	snprintf(command, cmdlen+urilen+1, ctx->other_browser_cmd, quoted_uri);
-	printf("command: '%s'\n", command);
+	log_msg("command: '%s'\n", command);
 
 	if (ctx->continuous_mode) {
 		if (fork() != 0) {
@@ -605,7 +605,7 @@ static void use_other_browser_cmd(struct swb_context *ctx, char *cmd) {
 	free(ctx->other_browser_cmd);
 	ctx->other_browser_cmd = calloc(len+1, sizeof(char));
 	if (!ctx->other_browser_cmd) {
-		printf("malloc failed!\n");
+		log_msg("malloc failed!\n");
 		ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
 	} else {
 		ctx->other_browser_cmd = strncpy(ctx->other_browser_cmd,
@@ -638,11 +638,12 @@ void update_default_browser(struct swb_context *ctx, char *default_browser) {
 		if (ctx->other_browser_cmd)
 			ctx->default_browser_launcher = launch_other_browser;
 		else {
-			printf("default_browser is 'other', but no other_browser_cmd set -- using default\n");
+			log_msg("default_browser is 'other', but no other_browser_cmd set -- using default\n");
 			ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
 		}
 	} else {
-		printf("Unknown default_browser %s, using default", default_browser);
+		log_msg("Unknown default_browser %s, using default",
+			default_browser);
 		ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
 	}
 }

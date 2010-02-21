@@ -53,7 +53,7 @@ static void read_config(int signalnum) {
 	FILE *fp;
 	int continuous_mode_seen = 0;
 	struct swb_config_line line;
-	char *default_browser = NULL;
+	char *default_browser = NULL, *logger_name = NULL;
 
 	set_config_defaults(&ctx);
 
@@ -78,6 +78,9 @@ static void read_config(int signalnum) {
 			} else if (!strcmp(line.key, "other_browser_cmd")) {
 				if (!ctx.other_browser_cmd)
 					ctx.other_browser_cmd = line.value;
+			} else if (!strcmp(line.key, "logging")) {
+				if (!logger_name)
+					logger_name = line.value;
 			} else {
 				/* Don't need this line's contents */
 				free(line.value);
@@ -96,7 +99,9 @@ static void read_config(int signalnum) {
 out:
 	fclose(fp);
 out_noopen:
+	log_config(logger_name);
 	update_default_browser(&ctx, default_browser);
+	free(logger_name);
 	free(default_browser);
 	return;
 }

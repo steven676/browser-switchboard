@@ -127,12 +127,12 @@ gboolean osso_browser_top_application(OssoBrowser *obj,
 		GError **error) {
 	if (!ctx.continuous_mode)
 		ignore_reconfig_requests();
-	launch_microb(&ctx, "new_window");
+	launch_browser(&ctx, "new_window");
 	return TRUE;
 }
 
 /* This is a "undocumented", non-standard extension to the API, ONLY
-   for use by /usr/bin/browser wrapper to implement --url */
+   for use by /usr/bin/microb wrapper */
 gboolean osso_browser_switchboard_launch_microb(OssoBrowser *obj,
 		const char *uri, GError **error) {
 	if (!ctx.continuous_mode)

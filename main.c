@@ -90,17 +90,20 @@ static void read_config(int signalnum) {
 	}
 	parse_config_file_end();
 
-	log_msg("continuous_mode: %d\n", ctx.continuous_mode);
-	log_msg("default_browser: '%s'\n",
-		default_browser?default_browser:"NULL");
-	log_msg("other_browser_cmd: '%s'\n",
-		ctx.other_browser_cmd?ctx.other_browser_cmd:"NULL");
-
 out:
 	fclose(fp);
 out_noopen:
 	log_config(logger_name);
 	update_default_browser(&ctx, default_browser);
+
+	log_msg("continuous_mode: %d\n", ctx.continuous_mode);
+	log_msg("default_browser: '%s'\n",
+		default_browser?default_browser:"NULL");
+	log_msg("other_browser_cmd: '%s'\n",
+		ctx.other_browser_cmd?ctx.other_browser_cmd:"NULL");
+	log_msg("logging: '%s'\n",
+		logger_name?logger_name:"NULL");
+
 	free(logger_name);
 	free(default_browser);
 	return;

@@ -1,3 +1,15 @@
+browser-switchboard (3.2-1fremantle1) extras-devel; urgency=low
+
+  * Beta release for Fremantle.
+  * Packaging changes:
+    - Ship a different microb.desktop file with the Fremantle location of the
+      stock web browser icon.
+    - Add a postinst that attempts to kill open MicroB browser processes, to
+      avoid having to restart for browser-switchboard to start handling
+      com.nokia.osso_browser.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Mon, 22 Feb 2010 03:02:50 -0800 
+
 browser-switchboard (3.2-1) extras-devel; urgency=low
 
   * New "upstream" stable release.

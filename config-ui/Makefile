@@ -57,11 +57,11 @@ $(PLUGIN): $(plugin_obj)
 		-c -o $@ $<
 
 strip: strip-plugin
-strip-plugin: plugin
+strip-plugin: $(PLUGIN)
 	strip $(PLUGIN)
 
 install: install-plugin
-install-plugin: plugin
+install-plugin: $(PLUGIN)
 	mkdir -p $(DESTDIR)$(PREFIX)/lib/hildon-control-panel
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications/hildon-control-panel
 	install -c -m 0755 $(PLUGIN) $(DESTDIR)$(PREFIX)/lib/hildon-control-panel

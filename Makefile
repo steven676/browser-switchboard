@@ -28,11 +28,11 @@ dbus-server-glue.h:
 strip: $(APP)
 	strip $(APP)
 
-install: all
+install: $(APP)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	mkdir -p $(DESTDIR)$(PREFIX)/share/dbus-1/services
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications/hildon
-	install -c -m 0755 browser-switchboard $(DESTDIR)$(PREFIX)/bin
+	install -c -m 0755 $(APP) $(DESTDIR)$(PREFIX)/bin
 	install -c -m 0644 com.nokia.osso_browser.service $(DESTDIR)$(PREFIX)/share/dbus-1/services
 	install -c -m 0755 browser $(DESTDIR)$(PREFIX)/bin
 	install -c -m 0755 microb $(DESTDIR)$(PREFIX)/bin

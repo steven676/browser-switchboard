@@ -20,10 +20,20 @@ happ_obj = $(APP).happ.o $(other_obj)
 PLUGIN = lib$(APP).so
 plugin_obj = $(APP).plugin.o ../configfile.plugin.o
 
-all: plugin
-plugin: $(PLUGIN)
+all:
+	@echo 'Usage:'
+	@echo '    make app -- build standalone GTK+ application'
+	@echo '    make diablo-hildon-app -- build standalone Diablo Hildon application'
+	@echo '    make diablo-plugin -- build Diablo hildon-control-panel plugin'
+	@echo '    make fremantle-hildon-app -- build standalone Fremantle Hildon application'
+	@echo '    make fremantle-plugin -- build Fremantle hildon-control-panel plugin'
 app: $(APP)
-hildon-app: $(HILDON_APP)
+diablo-hildon-app: $(HILDON_APP)
+diablo-plugin: $(PLUGIN)
+fremantle-hildon-app:
+	@$(MAKE) EXTRA_CPPFLAGS='-DFREMANTLE $(EXTRA_CPPFLAGS)' $(HILDON_APP)
+fremantle-plugin:
+	@$(MAKE) EXTRA_CPPFLAGS='-DFREMANTLE $(EXTRA_CPPFLAGS)' $(PLUGIN)
 
 $(APP): $(app_obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(APP) $(app_obj)
@@ -60,4 +70,4 @@ install-plugin: plugin
 clean:
 	rm -f $(APP) $(HILDON_APP) $(PLUGIN) *.o ../configfile.o
 
-.PHONY: strip strip-plugin install install-plugin plugin app hildon-app
+.PHONY: strip strip-plugin install install-plugin app diablo-hildon-app diablo-plugin fremantle-hildon-app fremantle-plugin

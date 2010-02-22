@@ -7,7 +7,16 @@ PREFIX = /usr
 APP = browser-switchboard
 obj = main.o launcher.o dbus-server-bindings.o configfile.o log.o
 
-all: $(APP)
+all:
+	@echo 'Usage:'
+	@echo '    make diablo -- build for Diablo'
+	@echo '    make fremantle -- build for Fremantle'
+diablo: $(APP)
+fremantle:
+	@$(MAKE) \
+	    EXTRA_CPPFLAGS='-DFREMANTLE `pkg-config --cflags dbus-1` $(EXTRA_CPPFLAGS)' \
+	    EXTRA_LDFLAGS='`pkg-config --libs dbus-1` $(EXTRA_LDFLAGS)' $(APP)
+
 
 $(APP): dbus-server-glue.h $(obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(APP) $(obj)
@@ -32,4 +41,4 @@ install: all
 clean:
 	rm -f $(APP) *.o dbus-server-glue.h
 
-.PHONY: strip install
+.PHONY: strip install diablo fremantle

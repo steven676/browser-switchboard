@@ -1,5 +1,5 @@
 BROWSER SWITCHBOARD
-version 3.1
+version 3.2
 
 Browser Switchboard is a program which allows you to choose which
 browser to use as the default browser. It supports MicroB, Tear,
@@ -23,18 +23,20 @@ You can now select the default browser by using the Browser Switchboard
 applet in the Control Panel.  Links in most applications, locally-saved
 web pages opened from the file manager, and (for Maemo 4.x) entries in
 the Web sidebar panel will open in the browser that you select as the
-default.  If you don't configure a default browser, MicroB will continue
-to be used as the default browser.
+default.  Opening the "Web" menu entry and running "browser" from the
+shell will also cause your chosen default browser to open.  If you don't
+configure a default browser, MicroB will continue to be used as the
+default browser.
 
 No matter which browser you select as the default, MicroB can always be
-opened via the Web menu entry in the applications menu (for Maemo 4.x,
-located in the Internet menu by default), or by running "browser" from
-the shell.  While MicroB is open, it will receive all links from other
-applications; closing MicroB will restore your chosen default browser.
+opened via the MicroB menu entry in the applications menu (for Maemo
+4.x, installed in the Extras menu by default), or by running "microb"
+from the shell.  While MicroB is open, it will receive all links from
+other applications; closing MicroB will restore your chosen default
+browser.
 
-Some users have reported that a restart may be necessary to ensure that
-Browser Switchboard is functioning.  If you experience trouble after
-installing the package, try rebooting your device first.
+If you experience trouble after installing the package, try rebooting
+your device.  If that fixes things, please report this as a bug.
 
 
 Configuring the Default Browser by Hand:
@@ -72,10 +74,12 @@ default_browser = "tear"
 # other_browser_cmd: If default browser is "other", what program
 # to run (%s will be replaced by URI)
 #other_browser_cmd = "some_browser %s"
+# logging: Where log output should go: "stdout", "syslog", "none"
+#logging = "stdout"
 # END SAMPLE CONFIG FILE
 
 Lines beginning with # characters are comments and are ignored by the
-script.  [Each option corresponds directly to an option or option group
+script.  [Most options correspond directly to an option or option group
 in the configuration UI.]
 
 In continuous mode, Browser Switchboard keeps running in the background
@@ -104,6 +108,14 @@ at a shell.  [In the UI, setting "Default brower" to "Other" activates
 the "Command (%s for URI)" setting, which corresponds to the value of
 other_browser_cmd.]
 
+The logging option controls where Browser Switchboard sends its debug
+logging output to.  You should not need to change this unless you're
+debugging Browser Switchboard, and there is no UI for this option.  The
+default option is "stdout", which means you won't see output unless you
+run Browser Switchboard from the shell.  "syslog" will send the output
+to the system log (assuming you have a syslogd set up on your device),
+and "none" disables debug logging entirely.
+
 
 Browser Switchboard and MicroB's browserd:
 
@@ -119,9 +131,9 @@ memory, but add a few seconds to MicroB's load time.
 Uninstalling Browser Switchboard:
 
 Remove the Browser Switchboard package using the Application Manager,
-and everything should be back to normal.  A reboot may be necessary for
-changes to take effect -- if you experience problems, try restarting
-your device first.
+and everything should be back to normal.  If you experience problems
+after uninstalling, try restarting your device first; if that fixes
+things, please report this as a bug.
 
 
 Compiling Browser Switchboard:
@@ -140,12 +152,15 @@ SDK$ cd browser-switchboard-X.Y
 
 4. Compile:
 
-SDK$ make
-SDK$ make -C config-ui
+SDK$ make diablo
+SDK$ make -C config-ui diablo-plugin
 
-(If you want the standalone config application instead of the Control
+(Replace "diablo" with "fremantle" and "diablo-plugin" with
+"fremantle-plugin" if compiling for Fremantle.
+
+If you want the standalone config application instead of the Control
 Panel plugin, do 
-SDK$ make -C config-ui hildon-app
+SDK$ make -C config-ui diablo-hildon-app
 instead.
 
 If you're using the Scratchbox2-based SDK+, you want
@@ -189,10 +204,10 @@ Source code is hosted in a Git (http://git-scm.com/) repository on
 git.maemo.org.  You can get a copy of the current development version by
 cloning the repository:
 
-$ git clone https://git.maemo.org/projects/browser-switch
+$ git clone http://git.maemo.org/projects/browser-switch
 
 or you can browse the source using gitweb
-(https://git.maemo.org/projects/browser-switch/?p=browser-switch;a=summary).
+(http://git.maemo.org/projects/browser-switch/?p=browser-switch;a=summary).
 
 
 Maintainer:

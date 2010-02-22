@@ -179,7 +179,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	printf("launch_microb with uri '%s'\n", uri);
 
 	/* Launch browserd if it's not running */
-	status = system("pidof browserd > /dev/null");
+	status = system("pidof /usr/sbin/browserd > /dev/null");
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
 		kill_browserd = 1;
 #ifdef FREMANTLE
@@ -408,7 +408,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 
 	/* Kill off browserd if we started it */
 	if (kill_browserd)
-		system("kill `pidof browserd`");
+		system("kill `pidof /usr/sbin/browserd`");
 
 	if (!ctx || !ctx->continuous_mode) 
 		exit(0);

@@ -183,9 +183,9 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
 		kill_browserd = 1;
 #ifdef FREMANTLE
-		system("/usr/sbin/browserd -d -b > /dev/null 2>&1");
+		system("/usr/sbin/browserd -d -b");
 #else
-		system("/usr/sbin/browserd -d > /dev/null 2>&1");
+		system("/usr/sbin/browserd -d");
 #endif
 	}
 

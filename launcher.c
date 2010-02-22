@@ -29,6 +29,7 @@
 #include <dbus/dbus-glib.h>
 
 #ifdef FREMANTLE
+#include <dbus/dbus-glib-lowlevel.h>
 #include <dbus/dbus.h>
 #endif
 

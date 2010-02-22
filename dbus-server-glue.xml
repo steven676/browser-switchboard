@@ -13,7 +13,11 @@
       <arg type="s" name="uri" direction="in" />
     </method>
     <method name="top_application" />
-    <method name="switchboard_launch_microb">
+  </interface>
+  <interface name="org.maemo.garage.browser_switchboard">
+    <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="switchboard" />
+    <method name="top_application" />
+    <method name="launch_microb">
       <arg type="s" name="uri" direction="in" />
     </method>
   </interface>

@@ -11,3 +11,4 @@ Type=Application
 Categories=Application;Internet;
 X-HildonDesk-ShowInToolbar=true
 X-Osso-Type=application/x-executable
+X-Osso-Service=org.maemo.garage.browser_switchboard

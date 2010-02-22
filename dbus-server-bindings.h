@@ -42,8 +42,10 @@ gboolean osso_browser_mime_open(OssoBrowser *obj,
 gboolean osso_browser_open_new_window(OssoBrowser *obj,
                 const char *uri, GError **error);
 gboolean osso_browser_top_application(OssoBrowser *obj, GError **error);
-/* This is an "undocumented", non-standard extension; DO NOT USE */
-gboolean osso_browser_switchboard_launch_microb(OssoBrowser *obj,
+
+/* The org.maemo.garage.browser_switchboard D-Bus interface */
+gboolean switchboard_top_application(OssoBrowser *obj, GError **error);
+gboolean switchboard_launch_microb(OssoBrowser *obj,
                 const char *uri, GError **error);
 
 void dbus_request_osso_browser_name(struct swb_context *ctx);

@@ -110,7 +110,7 @@ out_noopen:
 }
 
 int main() {
-	OssoBrowser *obj_osso_browser, *obj_osso_browser_req;
+	OssoBrowser *obj_osso_browser, *obj_osso_browser_req, *obj_switchboard;
 	GMainLoop *mainloop;
 	GError *error = NULL;
 	int reqname_result;
@@ -157,14 +157,14 @@ int main() {
 		return 1;
 	}
 
-	/* Get the org.maemo.garage.browser-switchboard name from D-Bus, as
+	/* Get the org.maemo.garage.browser_switchboard name from D-Bus, as
 	   a form of locking to ensure that not more than one
 	   browser-switchboard process is active at any time.  With
 	   DBUS_NAME_FLAG_DO_NOT_QUEUE set and DBUS_NAME_FLAG_REPLACE_EXISTING
 	   not set, getting the name succeeds if and only if no other
 	   process owns the name. */
 	if (!dbus_g_proxy_call(ctx.dbus_proxy, "RequestName", &error,
-			       G_TYPE_STRING, "org.maemo.garage.browser-switchboard",
+			       G_TYPE_STRING, "org.maemo.garage.browser_switchboard",
 			       G_TYPE_UINT, DBUS_NAME_FLAG_DO_NOT_QUEUE,
 			       G_TYPE_INVALID,
 			       G_TYPE_UINT, &reqname_result,
@@ -183,11 +183,15 @@ int main() {
 	/* Register ourselves to handle the osso_browser D-Bus methods */
 	obj_osso_browser = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	obj_osso_browser_req = g_object_new(OSSO_BROWSER_TYPE, NULL);
+	obj_switchboard = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	dbus_g_connection_register_g_object(ctx.session_bus,
 			"/com/nokia/osso_browser", G_OBJECT(obj_osso_browser));
 	dbus_g_connection_register_g_object(ctx.session_bus,
 			"/com/nokia/osso_browser/request",
 			G_OBJECT(obj_osso_browser_req));
+	dbus_g_connection_register_g_object(ctx.session_bus,
+			"/org/maemo/garage/browser_switchboard",
+			G_OBJECT(obj_switchboard));
 
 	mainloop = g_main_loop_new(NULL, FALSE);
 	log_msg("Starting main loop\n");

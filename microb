@@ -10,10 +10,14 @@ case "$1" in
 esac
 
 if pidof browser > /dev/null 2>&1; then
-	method=open_new_window
+	dest="com.nokia.osso_browser"
+	path="/com/nokia/osso_browser/request"
+	method="com.nokia.osso_browser.open_new_window"
 else
-	method=switchboard_launch_microb
+	dest="org.maemo.garage.browser_switchboard"
+	path="/org/maemo/garage/browser_switchboard"
+	method="org.maemo.garage.browser_switchboard.launch_microb"
 fi
 
-dbus-send --session --type=method_call --print-reply --dest="com.nokia.osso_browser" /com/nokia/osso_browser/request com.nokia.osso_browser.$method string:${url:-"new_window"} > /dev/null 2>&1
+dbus-send --session --type=method_call --print-reply --dest="$dest" "$path" "$method" string:${url:-"new_window"} > /dev/null 2>&1
 exit 0

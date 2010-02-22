@@ -32,7 +32,6 @@
 
 #ifdef FREMANTLE
 #include <dbus/dbus.h>
-#include <signal.h>
 #endif
 
 #include "browser-switchboard.h"
@@ -297,7 +296,6 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 				exit(1);
 			}
 		}
-		g_object_unref(g_proxy);
 
 		/* Workaround: the browser process we started is going to want
 		   to hang around forever, hogging the com.nokia.osso_browser
@@ -361,10 +359,20 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		dbus_connection_close(raw_connection);
 		dbus_connection_unref(raw_connection);
 
-		/* Kill off browser UI
-		   XXX: Hope we don't cause data loss here! */
-		printf("Killing MicroB\n");
-		kill(pid, SIGTERM);
+		/* Tell browser UI to exit nicely */
+		printf("Closing MicroB\n");
+		if (!dbus_g_proxy_call(g_proxy, "exit_browser", &gerror,
+				       G_TYPE_INVALID, G_TYPE_INVALID)) {
+			/* We don't expect a reply; any other error indicates
+			   a problem */
+			if (gerror->domain != DBUS_GERROR ||
+			    gerror->code != DBUS_GERROR_NO_REPLY) {
+				printf("exit_browser failed: %s\n",
+				       gerror->message);
+				exit(1);
+			}
+		}
+		g_object_unref(g_proxy);
 	} else {
 		/* Child process */
 		close_stdio();

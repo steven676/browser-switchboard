@@ -17,9 +17,6 @@ ifeq ($(DEB_HOST_ARCH),armel)
 	endif
 endif
 
-EXTRA_CPPFLAGS = -DFREMANTLE `pkg-config --cflags dbus-1`
-EXTRA_LDFLAGS = `pkg-config --libs dbus-1`
-
 configure: configure-stamp
 configure-stamp:
 	touch configure-stamp
@@ -30,8 +27,8 @@ build: build-stamp
 build-stamp: configure-stamp 
 	dh_testdir
 
-	make EXTRA_CFLAGS="$(EXTRA_CFLAGS)" diablo
-	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)" diablo-plugin
+	make EXTRA_CFLAGS="$(EXTRA_CFLAGS)" fremantle
+	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)" fremantle-plugin
 
 	touch $@
 

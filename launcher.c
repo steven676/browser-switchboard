@@ -29,8 +29,11 @@
 #include <dbus/dbus-glib.h>
 
 #ifdef FREMANTLE
+#include <signal.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <dbus/dbus.h>
+#include <sys/inotify.h>
+#include <poll.h>
 #endif
 
 #include "browser-switchboard.h"

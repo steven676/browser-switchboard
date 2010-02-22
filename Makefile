@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Os $(EXTRA_CFLAGS)
 CPPFLAGS = `pkg-config --cflags dbus-glib-1` $(EXTRA_CPPFLAGS)
-LDFLAGS = `pkg-config --libs dbus-glib-1` $(EXTRA_LDFLAGS)
+LDFLAGS = -Wl,--as-needed `pkg-config --libs dbus-glib-1` $(EXTRA_LDFLAGS)
 PREFIX = /usr
 
 APP = browser-switchboard
@@ -19,7 +19,7 @@ fremantle:
 
 
 $(APP): dbus-server-glue.h $(obj)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(APP) $(obj)
+	$(CC) $(CFLAGS) -o $(APP) $(obj) $(LDFLAGS)
 
 dbus-server-glue.h:
 	dbus-binding-tool --mode=glib-server --prefix="osso_browser" \

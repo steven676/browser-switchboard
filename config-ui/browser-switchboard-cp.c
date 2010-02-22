@@ -72,6 +72,8 @@ struct browser_entry browsers[] = {
 	{ NULL, NULL },
 };
 
+char *logger_name = NULL;
+
 struct config_widgets {
 #if defined(HILDON) && defined(FREMANTLE)
 	GtkWidget *continuous_mode_selector;
@@ -169,20 +171,25 @@ static void load_config(void) {
 					set_continuous_mode(atoi(line.value));
 					continuous_mode_seen = 1;
 				}
+				free(line.value);
 			} else if (!strcmp(line.key, "default_browser")) {
 				if (!default_browser_seen) {
 					set_default_browser(line.value);
 					default_browser_seen = 1;
 				}
+				free(line.value);
 			} else if (!strcmp(line.key, "other_browser_cmd")) {
 				if (!other_browser_cmd_seen) {
 					set_other_browser_cmd(line.value);
 					other_browser_cmd_seen = 1;
 				}
+				free(line.value);
+			} else if (!strcmp(line.key, "logging")) {
+				if (!logger_name)
+					logger_name = line.value;
 			}
 		}
 		free(line.key);
-		free(line.value);
 	}
 	parse_config_file_end();
 
@@ -261,6 +268,15 @@ static void save_config(void) {
 							get_other_browser_cmd());
 						other_browser_cmd_seen = 1;
 					}
+				} else if (!strcmp(line.key,
+							"logging")) {
+					if (logger_name) {
+						fprintf(tmpfp, "%s = \"%s\"\n",
+							line.key,
+							logger_name);
+						free(logger_name);
+						logger_name = NULL;
+					}
 				}
 			} else {
 				/* Just copy the old line over */
@@ -282,6 +298,9 @@ static void save_config(void) {
 	if (!other_browser_cmd_seen && strlen(get_other_browser_cmd()) > 0)
 		fprintf(tmpfp, "%s = \"%s\"\n",
 			"other_browser_cmd", get_other_browser_cmd());
+	if (logger_name)
+		fprintf(tmpfp, "%s = \"%s\"\n",
+			"logging", logger_name);
 
 	/* Replace the old config file with the new one */
 	fclose(tmpfp);

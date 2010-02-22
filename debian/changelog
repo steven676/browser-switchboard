@@ -1,3 +1,36 @@
+browser-switchboard (3.2-1) extras-devel; urgency=low
+
+  * New "upstream" stable release.
+  * Upstream changes:
+    - make the "Web" menu entry and /usr/bin/browser open the default browser,
+      and provide a new "MicroB" menu entry and /usr/bin/microb script for
+      launching MicroB; the previous behavior was counterintuitive and
+      difficult to discover
+    - Fremantle: fix launching and closing MicroB on Fremantle; thanks Faheem
+      Pervez and Uwe Kaminski for extensive testing
+    - Fremantle: force the Ovi Store bookmark to open in MicroB, since Ovi
+      Store doesn't load in other browsers; thanks ToJa92 of t.m.o for
+      reporting
+    - add ability to send debug output to syslog and new config setting
+      ("logging") to control where debug output goes; thanks Faheem Pervez for
+      the suggestion
+    - close stdin/stdout/stderr in child processes before the exec(), to make
+      debug output on stdout less noisy
+    - fix some abuses of the D-Bus API in launcher.c:launch_tear()
+    - make sure a running browserd is detected correctly on all devices so that
+      we don't try to launch another one; thanks Faheem Pervez for reporting
+    - ensure that only one browser-switchboard is active at any time
+    - update build system; we now have "diablo" and "fremantle" targets that
+      build binaries for the selected OS release
+    - link binaries with -Wl,--as-needed to eliminate unnecessary dependencies
+  * Packaging changes:
+    - Build with Thumb by default and provide a "nothumb" build option to turn
+      it off, instead of building with Thumb only when requested; the
+      autobuilders aren't requesting Thumb, but we want it by default.
+    - Update debian/rules for the new upstream build system.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Mon, 22 Feb 2010 02:14:19 -0800 
+
 browser-switchboard (3.1-2fremantle4) extras-devel; urgency=low
 
   * Alpha release for Fremantle.

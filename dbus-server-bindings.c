@@ -29,6 +29,7 @@
 #include "browser-switchboard.h"
 #include "launcher.h"
 #include "dbus-server-bindings.h"
+#include "log.h"
 
 extern struct swb_context ctx;
 
@@ -67,7 +68,7 @@ static void open_address(const char *uri) {
 		/* Not much to do in this case ... */
 		return;
 
-	printf("open_address '%s'\n", uri);
+	log_msg("open_address '%s'\n", uri);
 	if (uri[0] == '/') {
 		/* URI begins with a '/' -- assume it points to a local file
 		   and prefix with "file://" */
@@ -81,6 +82,15 @@ static void open_address(const char *uri) {
 		   we need to clean up after ourselves */
 		free(new_uri);
 	} else {
+#ifdef FREMANTLE
+		if (!strcmp(uri, "http://link.ovi.mobi/n900ovistore")) {
+			/* Ovi Store webpage will not open correctly in
+			   any browser other than MicroB, so force the
+			   link in the provided bookmark to open in MicroB */
+			launch_microb(&ctx, (char *)uri);
+			return;
+		}
+#endif
 		launch_browser(&ctx, (char *)uri);
 	}
 }
@@ -117,12 +127,12 @@ gboolean osso_browser_top_application(OssoBrowser *obj,
 		GError **error) {
 	if (!ctx.continuous_mode)
 		ignore_reconfig_requests();
-	launch_microb(&ctx, "new_window");
+	launch_browser(&ctx, "new_window");
 	return TRUE;
 }
 
 /* This is a "undocumented", non-standard extension to the API, ONLY
-   for use by /usr/bin/browser wrapper to implement --url */
+   for use by /usr/bin/microb wrapper */
 gboolean osso_browser_switchboard_launch_microb(OssoBrowser *obj,
 		const char *uri, GError **error) {
 	if (!ctx.continuous_mode)
@@ -146,11 +156,11 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 			       G_TYPE_INVALID,
 			       G_TYPE_UINT, &result,
 			       G_TYPE_INVALID)) {
-		printf("Couldn't acquire name com.nokia.osso_browser\n");
+		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
 	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {	
-		printf("Couldn't acquire name com.nokia.osso_browser\n");
+		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
 }

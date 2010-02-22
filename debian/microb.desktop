@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Name=MicroB
+GenericName=Browser
+Comment=weba_ap_web_browser_thumb
+Exec=/usr/bin/microb
+Icon=general_web
+Terminal=false
+Type=Application
+Categories=Application;Internet;
+X-HildonDesk-ShowInToolbar=true
+X-Osso-Type=application/x-executable

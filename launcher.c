@@ -193,6 +193,10 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	/* Release the osso_browser D-Bus name so that MicroB can take it */
 	dbus_release_osso_browser_name(ctx);
 
+	if ((pid = fork()) == -1) {
+		perror("fork");
+		exit(1);
+	}
 #ifdef FREMANTLE
 	/* Put together the path to the MicroB browserd lockfile */
 	if (!(homedir = getenv("HOME")))
@@ -227,11 +231,6 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		exit(1);
 	}
 	free(microb_profile_dir);
-
-	if ((pid = fork()) == -1) {
-		perror("fork");
-		exit(1);
-	}
 
 	if (pid > 0) {
 		/* Parent process */
@@ -467,11 +466,6 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		execl("/usr/bin/maemo-invoker", "browser", (char *)NULL);
 	}
 #else /* !FREMANTLE */
-	if ((pid = fork()) == -1) {
-		perror("fork");
-		exit(1);
-	}
-
 	if (pid > 0) {
 		/* Parent process */
 		waitpid(pid, &status, 0);

@@ -68,6 +68,6 @@ install-plugin: plugin
 	install -c -m 0644 $(APP).desktop $(DESTDIR)$(PREFIX)/share/applications/hildon-control-panel
 
 clean:
-	rm -f $(APP) $(HILDON_APP) $(PLUGIN) *.o ../configfile.o
+	rm -f $(APP) $(HILDON_APP) $(PLUGIN) $(app_obj) $(happ_obj) $(plugin_obj)
 
 .PHONY: strip strip-plugin install install-plugin app diablo-hildon-app diablo-plugin fremantle-hildon-app fremantle-plugin

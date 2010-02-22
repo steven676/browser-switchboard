@@ -39,6 +39,6 @@ install: all
 	install -c -m 0644 microb.desktop $(DESTDIR)$(PREFIX)/share/applications/hildon
 
 clean:
-	rm -f $(APP) *.o dbus-server-glue.h
+	rm -f $(APP) $(obj) dbus-server-glue.h
 
 .PHONY: strip install diablo fremantle

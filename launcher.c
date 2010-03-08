@@ -76,9 +76,9 @@ static DBusHandlerResult check_microb_started(DBusConnection *connection,
 		dbus_error_free(&error);
 		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 	}
-	/* If old is an empty string, then the name has been acquired, and
+	/* If new is not an empty string, then the name has been acquired, and
 	   MicroB should be ready to handle our request */
-	if (strlen(old) == 0) {
+	if (strlen(new) > 0) {
 		log_msg("MicroB ready\n");
 		microb_started = 1;
 	}

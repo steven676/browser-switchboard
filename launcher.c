@@ -134,7 +134,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 		if (!tear_proxy) {
 			if (!(tear_proxy = dbus_g_proxy_new_for_name(
 						ctx->session_bus,
-				       		"com.nokia.tear",
+						"com.nokia.tear",
 						"/com/nokia/tear",
 						"com.nokia.Tear"))) {
 				log_msg("Failed to create proxy for com.nokia.Tear D-Bus interface\n");
@@ -386,7 +386,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 				/* Event found, stop looking */
 				break;
 			memset(buf, '\0', 256);
-                }
+		}
 		inotify_rm_watch(fd, inot_wd);
 		close(fd);
 

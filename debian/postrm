@@ -46,6 +46,12 @@ case "$1" in
 	# Kill off any running browser-switchboard to make sure that the
 	# default browser gets launched
 	kill_old_proxies
+
+	# Clear hildon-control-panel's cached screenshot of itself
+	# Workaround for https://bugs.maemo.org/show_bug.cgi?id=9512
+	if [ -f /home/user/.cache/launch/com.nokia.controlpanel.pvr ]; then
+		rm -f /home/user/.cache/launch/com.nokia.controlpanel.pvr 
+	fi
 	;;
     upgrade|disappear)
 	# Kill off any running browser-switchboard to make sure that the new

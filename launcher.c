@@ -632,6 +632,8 @@ void update_default_browser(struct swb_context *ctx, char *default_browser) {
 		/* Cheat and reuse launch_other_browser, since we don't appear
 		   to need to do anything special */
 		use_other_browser_cmd(ctx, "fennec %s");
+	else if (!strcmp(default_browser, "opera"))
+		use_other_browser_cmd(ctx, "opera %s");
 	else if (!strcmp(default_browser, "midori"))
 		use_other_browser_cmd(ctx, "midori %s");
 	else if (!strcmp(default_browser, "other")) {

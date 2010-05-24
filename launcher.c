@@ -56,52 +56,8 @@ struct browser_launcher {
 
 #ifdef FREMANTLE
 static int microb_started = 0;
-
-/* Check to see whether MicroB is ready to handle D-Bus requests yet
-   See the comments in launch_microb to understand how this works. */
-static DBusHandlerResult check_microb_started(DBusConnection *connection,
-				     DBusMessage *message,
-				     void *user_data) {
-	DBusError error;
-	char *name, *old, *new;
-
-	log_msg("Checking to see if MicroB is ready\n");
-	dbus_error_init(&error);
-	if (!dbus_message_get_args(message, &error,
-				   DBUS_TYPE_STRING, &name,
-				   DBUS_TYPE_STRING, &old,
-				   DBUS_TYPE_STRING, &new,
-				   DBUS_TYPE_INVALID)) {
-		log_msg("%s\n", error.message);
-		dbus_error_free(&error);
-		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-	}
-	/* If new is not an empty string, then the name has been acquired, and
-	   MicroB should be ready to handle our request */
-	if (strlen(new) > 0) {
-		log_msg("MicroB ready\n");
-		microb_started = 1;
-	}
-
-	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-}
-
-/* Get a browserd PID from the corresponding Mozilla profile lockfile */
-static pid_t get_browserd_pid(const char *lockfile) {
-	char buf[256], *tmp;
-
-	/* The lockfile is a symlink pointing to "[ipaddr]:+[pid]", so read in
-	   the target of the symlink and parse it that way */
-	memset(buf, '\0', 256);
-	if (readlink(lockfile, buf, 255) == -1)
-		return -errno;
-	if (!(tmp = strstr(buf, ":+")))
-		return 0;
-	tmp += 2; /* Skip over the ":+" */
-
-	return atoi(tmp);
-}
 #endif
+
 
 /* Close stdin/stdout/stderr and replace with /dev/null */
 static int close_stdio(void) {
@@ -116,6 +72,7 @@ static int close_stdio(void) {
 	close(fd);
 	return 0;
 }
+
 
 static void launch_tear(struct swb_context *ctx, char *uri) {
 	int status;
@@ -170,47 +127,188 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 	}
 }
 
-void launch_microb(struct swb_context *ctx, char *uri) {
-	int kill_browserd = 0;
+
+#ifdef FREMANTLE
+/* Get a browserd PID from the corresponding Mozilla profile lockfile */
+static pid_t get_browserd_pid(const char *lockfile) {
+	char buf[256], *tmp;
+
+	/* The lockfile is a symlink pointing to "[ipaddr]:+[pid]", so read in
+	   the target of the symlink and parse it that way */
+	memset(buf, '\0', 256);
+	if (readlink(lockfile, buf, 255) == -1)
+		return -errno;
+	if (!(tmp = strstr(buf, ":+")))
+		return 0;
+	tmp += 2; /* Skip over the ":+" */
+
+	return atoi(tmp);
+}
+
+/* Check to see whether MicroB is ready to handle D-Bus requests yet
+   See the comments in microb_start_dbus_watch_* to understand how this
+   works. */
+static DBusHandlerResult check_microb_started(DBusConnection *connection,
+				     DBusMessage *message,
+				     void *user_data) {
+	DBusError error;
+	char *name, *old, *new;
+
+	log_msg("Checking to see if MicroB is ready\n");
+	dbus_error_init(&error);
+	if (!dbus_message_get_args(message, &error,
+				   DBUS_TYPE_STRING, &name,
+				   DBUS_TYPE_STRING, &old,
+				   DBUS_TYPE_STRING, &new,
+				   DBUS_TYPE_INVALID)) {
+		log_msg("%s\n", error.message);
+		dbus_error_free(&error);
+		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+	}
+	/* If new is not an empty string, then the name has been acquired, and
+	   MicroB should be ready to handle our request */
+	if (strlen(new) > 0) {
+		log_msg("MicroB ready\n");
+		microb_started = 1;
+	}
+
+	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
+/* Set up the D-Bus eavesdropping we'll use to watch for MicroB acquiring the
+   com.nokia.osso_browser D-Bus name.
+
+   Ideas for how to do this monitoring derived from the dbus-monitor code
+   (tools/dbus-monitor.c in the D-Bus codebase). */
+DBusConnection *microb_start_dbus_watch_init(void) {
+	DBusConnection *conn;
+	DBusError dbus_error;
+	DBusHandleMessageFunction filter_func = check_microb_started;
+
+	dbus_error_init(&dbus_error);
+
+	conn = dbus_bus_get_private(DBUS_BUS_SESSION, &dbus_error);
+	if (!conn) {
+		log_msg("Failed to open connection to session bus: %s\n",
+			dbus_error.message);
+		dbus_error_free(&dbus_error);
+		return NULL;
+	}
+
+	dbus_bus_add_match(conn,
+			   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
+			   &dbus_error);
+	if (dbus_error_is_set(&dbus_error)) {
+		log_msg("Failed to set up watch for browser UI start: %s\n",
+			dbus_error.message);
+		dbus_error_free(&dbus_error);
+		return NULL;
+	}
+	if (!dbus_connection_add_filter(conn, filter_func, NULL, NULL)) {
+		log_msg("Failed to set up watch filter!\n");
+		return NULL;
+	}
+
+	return conn;
+}
+
+/* Wait for MicroB to acquire the com.nokia.osso_browser D-Bus name
+   Blocks until name is acquired, then returns */
+void microb_start_dbus_watch_wait(DBusConnection *conn) {
+	microb_started = 0;
+	log_msg("Waiting for MicroB to start\n");
+	while (!microb_started &&
+	       dbus_connection_read_write_dispatch(conn, -1));
+}
+
+/* Tear down the D-Bus watch for acquiring com.nokia.osso-browser */
+void microb_start_dbus_watch_remove(DBusConnection *conn) {
+	DBusError dbus_error;
+	DBusHandleMessageFunction filter_func = check_microb_started;
+
+	dbus_connection_remove_filter(conn, filter_func, NULL);
+	dbus_bus_remove_match(conn,
+			      "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
+			      &dbus_error);
+	if (dbus_error_is_set(&dbus_error))
+		/* Don't really care -- about to disconnect from the
+		   bus anyhow */
+		dbus_error_free(&dbus_error);
+	dbus_connection_close(conn);
+	dbus_connection_unref(conn);
+}
+
+/* Open a MicroB window using the D-Bus interface
+   It's assumed that we have already released the D-Bus name and that it's been
+   ensured that MicroB has acquired com.nokia.osso_browser (otherwise this will
+   cause D-Bus to try forever to launch another browser-switchboard) */
+
+#define LAUNCH_MICROB_BOOKMARK_WIN_OK 0x1
+
+int launch_microb_open_window(struct swb_context *ctx, char *uri,
+			      int flags) {
+	DBusGProxy *g_proxy;
+	GError *gerror = NULL;
+
+	g_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
+			"com.nokia.osso_browser",
+			"/com/nokia/osso_browser/request",
+			"com.nokia.osso_browser");
+	if (!g_proxy) {
+		log_msg("Couldn't get a com.nokia.osso_browser proxy\n");
+		return 0;
+	}
+
+	if (!strcmp(uri, "new_window")) {
+		if (flags & LAUNCH_MICROB_BOOKMARK_WIN_OK) {
+			if (!dbus_g_proxy_call(g_proxy, "top_application",
+					       &gerror, G_TYPE_INVALID,
+					       G_TYPE_INVALID)) {
+				log_msg("Opening window failed: %s\n",
+					gerror->message);
+				g_error_free(gerror);
+				return 0;
+			}
+
+			return 1;
+		} else {
+			/* Since we can't detect when the bookmark window
+			   closes, we'd have a corner case where, if the user
+			   just closes the bookmark window without opening any
+			   browser windows, we don't kill off MicroB or resume
+			   handling com.nokia.osso_browser */
+			uri = "about:blank";
+		}
+	}
+	if (!dbus_g_proxy_call(g_proxy, "load_url",
+			       &gerror,
+			       G_TYPE_STRING, uri,
+			       G_TYPE_INVALID,
+			       G_TYPE_INVALID)) {
+		log_msg("Opening window failed: %s\n", gerror->message);
+		g_error_free(gerror);
+		return 0;
+	}
+
+	g_object_unref(g_proxy);
+	return 1;
+}
+
+/* Launch Fremantle MicroB and kill it when the session is finished */
+void launch_microb_fremantle_with_kill(struct swb_context *ctx, char *uri) {
 	int status;
 	pid_t pid;
-#ifdef FREMANTLE
 	char *homedir, *microb_profile_dir, *microb_lockfile;
 	size_t len;
 	int fd, inot_wd;
 	DBusConnection *raw_connection;
-	DBusError dbus_error;
-	DBusHandleMessageFunction filter_func;
-	DBusGProxy *g_proxy;
-	GError *gerror = NULL;
 	int bytes_read;
 	char buf[256], *pos;
 	struct inotify_event *event;
 	pid_t browserd_pid, waited_pid;
 	struct sigaction act, oldact;
 	int ignore_sigstop;
-#endif
 
-	if (!uri)
-		uri = "new_window";
-
-	log_msg("launch_microb with uri '%s'\n", uri);
-
-	/* Launch browserd if it's not running */
-	status = system("pidof browserd > /dev/null");
-	if (WIFEXITED(status) && WEXITSTATUS(status)) {
-		kill_browserd = 1;
-#ifdef FREMANTLE
-		system("/usr/sbin/browserd -d -b > /dev/null 2>&1");
-#else
-		system("/usr/sbin/browserd -d > /dev/null 2>&1");
-#endif
-	}
-
-	/* Release the osso_browser D-Bus name so that MicroB can take it */
-	dbus_release_osso_browser_name(ctx);
-
-#ifdef FREMANTLE
 	/* Put together the path to the MicroB browserd lockfile */
 	if (!(homedir = getenv("HOME")))
 		homedir = DEFAULT_HOMEDIR;
@@ -248,33 +346,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	/* Set up the D-Bus eavesdropping we'll use to watch for MicroB
 	   acquiring the com.nokia.osso_browser D-Bus name.  Again, this needs
 	   to happen before the browser is launched, so that there's no race
-	   between establishing the watch and browser startup.
-
-	   Ideas for how to do this monitoring derived from the dbus-monitor
-	   code (tools/dbus-monitor.c in the D-Bus codebase). */
-	dbus_error_init(&dbus_error);
-
-	raw_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &dbus_error);
-	if (!raw_connection) {
-		log_msg("Failed to open connection to session bus: %s\n",
-			dbus_error.message);
-		dbus_error_free(&dbus_error);
-		exit(1);
-	}
-
-	dbus_bus_add_match(raw_connection,
-			   "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
-			   &dbus_error);
-	if (dbus_error_is_set(&dbus_error)) {
-		log_msg("Failed to set up watch for browser UI start: %s\n",
-			dbus_error.message);
-		dbus_error_free(&dbus_error);
-		exit(1);
-	}
-	filter_func = check_microb_started;
-	if (!dbus_connection_add_filter(raw_connection,
-					filter_func, NULL, NULL)) {
-		log_msg("Failed to set up watch filter!\n");
+	   between establishing the watch and browser startup. */
+	if (!(raw_connection = microb_start_dbus_watch_init())) {
 		exit(1);
 	}
 
@@ -283,196 +356,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		exit(1);
 	}
 
-	if (pid > 0) {
-		/* Parent process */
-		/* Wait for our child to start the browser UI process and
-		   for it to acquire the com.nokia.osso_browser D-Bus name,
-		   then make the appropriate method call to open the browser
-		   window. */
-		microb_started = 0;
-		log_msg("Waiting for MicroB to start\n");
-		while (!microb_started &&
-		       dbus_connection_read_write_dispatch(raw_connection,
-							   -1));
-		dbus_connection_remove_filter(raw_connection,
-					      filter_func, NULL);
-		dbus_bus_remove_match(raw_connection,
-				      "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",
-				      &dbus_error);
-		if (dbus_error_is_set(&dbus_error))
-			/* Don't really care -- about to disconnect from the
-			   bus anyhow */
-			dbus_error_free(&dbus_error);
-		dbus_connection_close(raw_connection);
-		dbus_connection_unref(raw_connection);
-
-		/* Browser UI's started, send it the request for a new window
-		   via D-Bus */
-		g_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
-				"com.nokia.osso_browser",
-				"/com/nokia/osso_browser/request",
-				"com.nokia.osso_browser");
-		if (!g_proxy) {
-			log_msg("Couldn't get a com.nokia.osso_browser proxy\n");
-			exit(1);
-		}
-		if (!strcmp(uri, "new_window")) {
-#if 0 /* Since we can't detect when the bookmark window closes, we'd have a
-	 corner case where, if the user just closes the bookmark window
-	 without opening any browser windows, we don't kill off MicroB or
-	 resume handling com.nokia.osso_browser */
-			if (!dbus_g_proxy_call(g_proxy, "top_application",
-					       &gerror, G_TYPE_INVALID,
-					       G_TYPE_INVALID)) {
-				log_msg("Opening window failed: %s\n",
-					gerror->message);
-				exit(1);
-			}
-#endif
-			if (!dbus_g_proxy_call(g_proxy, "load_url",
-					       &gerror,
-					       G_TYPE_STRING, "about:blank",
-					       G_TYPE_INVALID,
-					       G_TYPE_INVALID)) {
-				log_msg("Opening window failed: %s\n",
-					gerror->message);
-				exit(1);
-			}
-		} else {
-			if (!dbus_g_proxy_call(g_proxy, "load_url",
-					       &gerror,
-					       G_TYPE_STRING, uri,
-					       G_TYPE_INVALID,
-					       G_TYPE_INVALID)) {
-				log_msg("Opening window failed: %s\n",
-					gerror->message);
-				exit(1);
-			}
-		}
-		g_object_unref(g_proxy);
-
-		/* Workaround: the browser process we started is going to want
-		   to hang around forever, hogging the com.nokia.osso_browser
-		   D-Bus interface while at it.  To fix this, we notice that
-		   when the last browser window closes, the browser UI restarts
-		   its attached browserd process.  Get the browserd process's
-		   PID and use ptrace() to watch for process termination.
-
-		   This has the problem of not being able to detect whether
-		   the bookmark window is open and/or in use, but it's the best
-		   that I can think of.  Better suggestions would be greatly
-		   appreciated. */
-
-		/* Wait for the MicroB browserd lockfile to be created */
-		log_msg("Waiting for browserd lockfile to be created\n");
-		memset(buf, '\0', 256);
-		/* read() blocks until there are events to be read */
-		while ((bytes_read = read(fd, buf, 255)) > 0) {
-			pos = buf;
-			/* Loop until we see the event we're looking for
-			   or until all the events are processed */
-			while (pos && (pos-buf) < bytes_read) {
-				event = (struct inotify_event *)pos;
-				len = sizeof(struct inotify_event)
-				      + event->len;
-				if (!strcmp(MICROB_LOCKFILE,
-					    event->name)) {
-					/* Lockfile created */
-					pos = NULL;
-					break;
-				} else if ((pos-buf) + len < bytes_read)
-					/* More events to process */
-					pos += len;
-				else
-					/* All events processed */
-					break;
-			}
-			if (!pos)
-				/* Event found, stop looking */
-				break;
-			memset(buf, '\0', 256);
-		}
-		inotify_rm_watch(fd, inot_wd);
-		close(fd);
-
-		/* Get the PID of the browserd from the lockfile */
-		if ((browserd_pid = get_browserd_pid(microb_lockfile)) <= 0) {
-			if (browserd_pid == 0)
-				log_msg("Profile lockfile link lacks PID\n");
-			else
-				log_perror(-browserd_pid,
-					   "readlink() on lockfile failed");
-			exit(1);
-		}
-		free(microb_lockfile);
-
-		/* Wait for the browserd to close */
-		log_msg("Waiting for MicroB (browserd pid %d) to finish\n",
-			browserd_pid);
-		/* Clear any existing SIGCHLD handler to prevent interference
-		   with our wait() */
-		act.sa_handler = SIG_DFL;
-		act.sa_flags = 0;
-		sigemptyset(&(act.sa_mask));
-		if (sigaction(SIGCHLD, &act, &oldact) == -1) {
-			log_perror(errno, "clearing SIGCHLD handler failed");
-			exit(1);
-		}
-
-		/* Trace the browserd to get a close notification */
-		ignore_sigstop = 1;
-		if (ptrace(PTRACE_ATTACH, browserd_pid, NULL, NULL) == -1) {
-			log_perror(errno, "PTRACE_ATTACH");
-			exit(1);
-		}
-		ptrace(PTRACE_CONT, browserd_pid, NULL, NULL);
-		while ((waited_pid = wait(&status)) > 0) {
-			if (waited_pid != browserd_pid)
-				/* Not interested in other processes */
-				continue;
-			if (WIFEXITED(status) || WIFSIGNALED(status))
-				/* browserd exited */
-				break;
-			else if (WIFSTOPPED(status)) {
-				/* browserd was sent a signal
-				   We're responsible for making sure this
-				   signal gets delivered */
-				if (ignore_sigstop &&
-				    WSTOPSIG(status) == SIGSTOP) {
-					/* Ignore the first SIGSTOP received
-					   This is raised for some reason
-					   immediately after we start tracing
-					   the process, and won't be followed
-					   by a SIGCONT at any point */
-					log_msg("Ignoring first SIGSTOP\n");
-					ptrace(PTRACE_CONT, browserd_pid,
-					       NULL, NULL);
-					ignore_sigstop = 0;
-					continue;
-				}
-				log_msg("Forwarding signal %d to browserd\n",
-					WSTOPSIG(status));
-				ptrace(PTRACE_CONT, browserd_pid,
-				       NULL, WSTOPSIG(status));
-			}
-		}
-
-		/* Kill off browser UI
-		   XXX: There is a race here with the restarting of the closed
-		   browserd; if that happens before we kill the browser UI, the
-		   newly started browserd may not close with the UI
-		   XXX: Hope we don't cause data loss here! */
-		log_msg("Killing MicroB\n");
-		kill(pid, SIGTERM);
-		waitpid(pid, &status, 0);
-
-		/* Restore old SIGCHLD handler */
-		if (sigaction(SIGCHLD, &oldact, NULL) == -1) {
-			log_perror(errno,
-				   "restoring old SIGCHLD handler failed");
-			exit(1);
-		}
-	} else {
+	if (!pid) {
 		/* Child process */
 		dbus_connection_close(raw_connection);
 		dbus_connection_unref(raw_connection);
@@ -486,7 +370,169 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 		   wait for it to claim the D-Bus name and then display the
 		   window using D-Bus */
 		execl("/usr/bin/maemo-invoker", "browser", (char *)NULL);
+
+		/* If we get here, exec() failed */
+		exit(1);
 	}
+
+	/* Wait for our child to start the browser UI process and
+	   for it to acquire the com.nokia.osso_browser D-Bus name,
+	   then make the appropriate method call to open the browser
+	   window. */
+	microb_start_dbus_watch_wait(raw_connection);
+	microb_start_dbus_watch_remove(raw_connection);
+	if (!launch_microb_open_window(ctx, uri, 0)) {
+		exit(1);
+	}
+
+	/* Workaround: the browser process we started is going to want
+	   to hang around forever, hogging the com.nokia.osso_browser
+	   D-Bus interface while at it.  To fix this, we notice that
+	   when the last browser window closes, the browser UI restarts
+	   its attached browserd process.  Get the browserd process's
+	   PID and use ptrace() to watch for process termination.
+
+	   This has the problem of not being able to detect whether
+	   the bookmark window is open and/or in use, but it's the best
+	   that I can think of.  Better suggestions would be greatly
+	   appreciated. */
+
+	/* Wait for the MicroB browserd lockfile to be created */
+	log_msg("Waiting for browserd lockfile to be created\n");
+	memset(buf, '\0', 256);
+	/* read() blocks until there are events to be read */
+	while ((bytes_read = read(fd, buf, 255)) > 0) {
+		pos = buf;
+		/* Loop until we see the event we're looking for
+		   or until all the events are processed */
+		while (pos && (pos-buf) < bytes_read) {
+			event = (struct inotify_event *)pos;
+			len = sizeof(struct inotify_event) + event->len;
+			if (!strcmp(MICROB_LOCKFILE, event->name)) {
+				/* Lockfile created */
+				pos = NULL;
+				break;
+			} else if ((pos-buf) + len < bytes_read)
+				/* More events to process */
+				pos += len;
+			else
+				/* All events processed */
+				break;
+		}
+		if (!pos)
+			/* Event found, stop looking */
+			break;
+		memset(buf, '\0', 256);
+	}
+	inotify_rm_watch(fd, inot_wd);
+	close(fd);
+
+	/* Get the PID of the browserd from the lockfile */
+	if ((browserd_pid = get_browserd_pid(microb_lockfile)) <= 0) {
+		if (browserd_pid == 0)
+			log_msg("Profile lockfile link lacks PID\n");
+		else
+			log_perror(-browserd_pid,
+				   "readlink() on lockfile failed");
+		exit(1);
+	}
+	free(microb_lockfile);
+
+	/* Wait for the browserd to close */
+	log_msg("Waiting for MicroB (browserd pid %d) to finish\n",
+		browserd_pid);
+	/* Clear any existing SIGCHLD handler to prevent interference
+	   with our wait() */
+	act.sa_handler = SIG_DFL;
+	act.sa_flags = 0;
+	sigemptyset(&(act.sa_mask));
+	if (sigaction(SIGCHLD, &act, &oldact) == -1) {
+		log_perror(errno, "clearing SIGCHLD handler failed");
+		exit(1);
+	}
+
+	/* Trace the browserd to get a close notification */
+	ignore_sigstop = 1;
+	if (ptrace(PTRACE_ATTACH, browserd_pid, NULL, NULL) == -1) {
+		log_perror(errno, "PTRACE_ATTACH");
+		exit(1);
+	}
+	ptrace(PTRACE_CONT, browserd_pid, NULL, NULL);
+	while ((waited_pid = wait(&status)) > 0) {
+		if (waited_pid != browserd_pid)
+			/* Not interested in other processes */
+			continue;
+		if (WIFEXITED(status) || WIFSIGNALED(status))
+			/* browserd exited */
+			break;
+		else if (WIFSTOPPED(status)) {
+			/* browserd was sent a signal
+			   We're responsible for making sure this signal gets
+			   delivered */
+			if (ignore_sigstop && WSTOPSIG(status) == SIGSTOP) {
+				/* Ignore the first SIGSTOP received
+				   This is raised for some reason immediately
+				   after we start tracing the process, and
+				   won't be followed by a SIGCONT at any point
+				 */
+				log_msg("Ignoring first SIGSTOP\n");
+				ptrace(PTRACE_CONT, browserd_pid, NULL, NULL);
+				ignore_sigstop = 0;
+				continue;
+			}
+			log_msg("Forwarding signal %d to browserd\n",
+				WSTOPSIG(status));
+			ptrace(PTRACE_CONT, browserd_pid, NULL,
+			       WSTOPSIG(status));
+		}
+	}
+
+	/* Kill off browser UI
+	   XXX: There is a race here with the restarting of the closed
+	   browserd; if that happens before we kill the browser UI, the newly
+	   started browserd may not close with the UI
+	   XXX: Hope we don't cause data loss here! */
+	log_msg("Killing MicroB\n");
+	kill(pid, SIGTERM);
+	waitpid(pid, &status, 0);
+
+	/* Restore old SIGCHLD handler */
+	if (sigaction(SIGCHLD, &oldact, NULL) == -1) {
+		log_perror(errno, "restoring old SIGCHLD handler failed");
+		exit(1);
+	}
+}
+#endif /* FREMANTLE */
+
+void launch_microb(struct swb_context *ctx, char *uri) {
+	int kill_browserd = 0;
+	int status;
+#ifndef FREMANTLE
+	pid_t pid;
+#endif
+
+	if (!uri)
+		uri = "new_window";
+
+	log_msg("launch_microb with uri '%s'\n", uri);
+
+	/* Launch browserd if it's not running */
+	status = system("pidof browserd > /dev/null");
+	if (WIFEXITED(status) && WEXITSTATUS(status)) {
+		kill_browserd = 1;
+#ifdef FREMANTLE
+		system("/usr/sbin/browserd -d -b > /dev/null 2>&1");
+#else
+		system("/usr/sbin/browserd -d > /dev/null 2>&1");
+#endif
+	}
+
+	/* Release the osso_browser D-Bus name so that MicroB can take it */
+	dbus_release_osso_browser_name(ctx);
+
+#ifdef FREMANTLE
+	/* Do the insanity to launch Fremantle MicroB */
+	launch_microb_fremantle_with_kill(ctx, uri);
 #else /* !FREMANTLE */
 	if ((pid = fork()) == -1) {
 		log_perror(errno, "fork");

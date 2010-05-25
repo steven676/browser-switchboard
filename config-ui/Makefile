@@ -11,14 +11,14 @@ LDFLAGS_PLUGIN = -shared $(LDFLAGS_HILDON) \
 	`pkg-config --libs libosso` `pkg-config --libs hildon-control-panel`
 PREFIX = /usr
 
-other_obj = ../configfile.o
+other_obj = ../configfile.o ../config.o save-config.o
 
 APP = browser-switchboard-cp
 app_obj = $(APP).app.o $(other_obj)
 HILDON_APP = $(APP)-hildon
 happ_obj = $(APP).happ.o $(other_obj)
 PLUGIN = lib$(APP).so
-plugin_obj = $(APP).plugin.o ../configfile.plugin.o
+plugin_obj = $(APP).plugin.o ../configfile.plugin.o ../config.plugin.o save-config.plugin.o
 
 all:
 	@echo 'Usage:'

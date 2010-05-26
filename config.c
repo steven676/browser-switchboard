@@ -26,17 +26,47 @@
 #include "configfile.h"
 #include "config.h"
 
-/* Initialize a swb_config struct with configuration defaults */
-void swb_config_init(struct swb_config *cfg) {
-	if (!cfg)
+/* The Browser Switchboard config file options */
+struct swb_config_option swb_config_options[] = {
+	{ "continuous_mode", SWB_CONFIG_OPT_INT, SWB_CONFIG_CONTINUOUS_MODE_SET },
+	{ "default_browser", SWB_CONFIG_OPT_STRING, SWB_CONFIG_DEFAULT_BROWSER_SET },
+	{ "other_browser_cmd", SWB_CONFIG_OPT_STRING, SWB_CONFIG_OTHER_BROWSER_CMD_SET },
+	{ "logging", SWB_CONFIG_OPT_STRING, SWB_CONFIG_LOGGING_SET },
+	{ NULL, 0, 0 },
+};
+
+/* Browser Switchboard configuration defaults */
+static struct swb_config swb_config_defaults = {
+	.flags = SWB_CONFIG_INITIALIZED,
+	.continuous_mode = 0,
+	.default_browser = "microb",
+	.other_browser_cmd = NULL,
+	.logging = "stdout",
+};
+
+
+/* Copy the contents of an swb_config struct
+   The entries[] array means that the standard copy will not work */
+void swb_config_copy(struct swb_config *dst, struct swb_config *src) {
+	if (!dst || !src)
 		return;
 
-	cfg->continuous_mode = 0;
-	cfg->default_browser = "microb";
-	cfg->other_browser_cmd = NULL;
-	cfg->logging = "stdout";
+	dst->entries[0] = &(dst->continuous_mode);
+	dst->entries[1] = &(dst->default_browser);
+	dst->entries[2] = &(dst->other_browser_cmd);
+	dst->entries[3] = &(dst->logging);
 
-	cfg->flags = SWB_CONFIG_INITIALIZED;
+	dst->flags = src->flags;
+
+	dst->continuous_mode = src->continuous_mode;
+	dst->default_browser = src->default_browser;
+	dst->other_browser_cmd = src->other_browser_cmd;
+	dst->logging = src->logging;
+}
+
+/* Initialize a swb_config struct with configuration defaults */
+void swb_config_init(struct swb_config *cfg) {
+	swb_config_copy(cfg, &swb_config_defaults);
 }
 
 /* Free all heap memory used in an swb_config struct
@@ -63,6 +93,40 @@ void swb_config_free(struct swb_config *cfg) {
 	cfg->flags = 0;
 }
 
+/* Load a value into the part of a struct swb_config indicated by name */
+static int swb_config_load_option(struct swb_config *cfg,
+				  char *name, char *value) {
+	int i;
+	struct swb_config_option opt;
+	int retval = 0;
+
+	for (i = 0; swb_config_options[i].name; ++i) {
+		opt = swb_config_options[i];
+		if (strcmp(name, opt.name))
+			continue;
+
+		if (!(cfg->flags & opt.set_mask)) {
+			switch (opt.type) {
+			  case SWB_CONFIG_OPT_STRING:
+				  *(char **)cfg->entries[i] = value;
+				  break;
+			  case SWB_CONFIG_OPT_INT:
+				  *(int *)cfg->entries[i] = atoi(value);
+				  free(value);
+				  break;
+			}
+			cfg->flags |= opt.set_mask;
+		}
+		retval = 1;
+		break;
+	}
+
+	if (!retval)
+		free(value);
+
+	return retval;
+}
+
 /* Read the config file and load settings into the provided swb_config struct
    Caller is responsible for freeing allocated strings with free()
    Returns true on success, false otherwise */
@@ -81,39 +145,8 @@ int swb_config_load(struct swb_config *cfg) {
 	if (!parse_config_file_begin())
 		goto out;
 	while (!parse_config_file_line(fp, &line)) {
-		if (line.parsed) {
-			if (!strcmp(line.key, "continuous_mode")) {
-				if (!(cfg->flags &
-				      SWB_CONFIG_CONTINUOUS_MODE_SET)) {
-					cfg->continuous_mode = atoi(line.value);
-					cfg->flags |=
-						SWB_CONFIG_CONTINUOUS_MODE_SET;
-				}
-				free(line.value);
-			} else if (!strcmp(line.key, "default_browser")) {
-				if (!(cfg->flags &
-				      SWB_CONFIG_DEFAULT_BROWSER_SET)) {
-					cfg->default_browser = line.value;
-					cfg->flags |=
-						SWB_CONFIG_DEFAULT_BROWSER_SET;
-				}
-			} else if (!strcmp(line.key, "other_browser_cmd")) {
-				if (!(cfg->flags &
-				      SWB_CONFIG_OTHER_BROWSER_CMD_SET)) {
-					cfg->other_browser_cmd = line.value;
-					cfg->flags |=
-						SWB_CONFIG_OTHER_BROWSER_CMD_SET;
-				}
-			} else if (!strcmp(line.key, "logging")) {
-				if (!(cfg->flags & SWB_CONFIG_LOGGING_SET)) {
-					cfg->logging = line.value;
-					cfg->flags |= SWB_CONFIG_LOGGING_SET;
-				}
-			} else {
-				/* Don't need this line's contents */
-				free(line.value);
-			}
-		}
+		if (line.parsed)
+			swb_config_load_option(cfg, line.key, line.value);
 		free(line.key);
 	}
 	parse_config_file_end();

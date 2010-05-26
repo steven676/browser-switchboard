@@ -31,12 +31,26 @@
 
 struct swb_config {
 	unsigned int flags;
+	/* Array of pointers to the elements of the struct, in the order given
+	   in swb_config_options[] */
+	void *entries[4];
+
 	int continuous_mode;
 	char *default_browser;
 	char *other_browser_cmd;
 	char *logging;
 };
 
+struct swb_config_option {
+	char *name;
+	enum {
+		SWB_CONFIG_OPT_STRING,
+		SWB_CONFIG_OPT_INT
+	} type;
+	int set_mask;
+};
+
+void swb_config_copy(struct swb_config *dst, struct swb_config *src);
 void swb_config_init(struct swb_config *cfg);
 void swb_config_free(struct swb_config *cfg);
 

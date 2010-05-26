@@ -30,6 +30,40 @@
 #include "configfile.h"
 #include "config.h"
 
+extern struct swb_config_option swb_config_options[];
+
+/* Outputs a config file line for the named option to a file descriptor */
+static void swb_config_output_option(FILE *fp, unsigned int *oldcfg_seen,
+			      struct swb_config *cfg, char *name) {
+	int i;
+	struct swb_config_option opt;
+	
+	for (i = 0; swb_config_options[i].name; ++i) {
+		opt = swb_config_options[i];
+		if (strcmp(opt.name, name))
+			continue;
+
+		if (!(*oldcfg_seen & opt.set_mask) &&
+		    (cfg->flags & opt.set_mask)) {
+			switch (opt.type) {
+			  case SWB_CONFIG_OPT_STRING:
+				fprintf(fp, "%s = \"%s\"\n",
+					opt.name,
+					*(char **)cfg->entries[i]);
+				*oldcfg_seen |= opt.set_mask;
+				break;
+			  case SWB_CONFIG_OPT_INT:
+				fprintf(fp, "%s = %d\n",
+					opt.name,
+					*(int *)cfg->entries[i]);
+				*oldcfg_seen |= opt.set_mask;
+				break;
+			}
+		}
+		break;
+	}
+}
+
 /* Save the settings in the provided swb_config struct to the config file
    Returns true on success, false otherwise */
 int swb_config_save(struct swb_config *cfg) {
@@ -39,6 +73,7 @@ int swb_config_save(struct swb_config *cfg) {
 	int retval = 1;
 	struct swb_config_line line;
 	unsigned int oldcfg_seen = 0;
+	int i;
 
 	/* If CONFIGFILE_DIR doesn't exist already, try to create it */
 	if (!(homedir = getenv("HOME")))
@@ -78,46 +113,8 @@ int swb_config_save(struct swb_config *cfg) {
 		while (!parse_config_file_line(fp, &line)) {
 			if (line.parsed) {
 				/* Is a config line, print the new value here */
-				if (!strcmp(line.key, "continuous_mode")) {
-					if (!(oldcfg_seen &
-					      SWB_CONFIG_CONTINUOUS_MODE_SET)) {
-						fprintf(tmpfp, "%s = %d\n",
-							line.key,
-							cfg->continuous_mode);
-						oldcfg_seen |=
-							SWB_CONFIG_CONTINUOUS_MODE_SET;
-					}
-				} else if (!strcmp(line.key,
-						   "default_browser")) {
-					if (!(oldcfg_seen &
-					      SWB_CONFIG_DEFAULT_BROWSER_SET)) {
-						fprintf(tmpfp, "%s = \"%s\"\n",
-							line.key,
-							cfg->default_browser);
-						oldcfg_seen |=
-							SWB_CONFIG_DEFAULT_BROWSER_SET;
-					}
-				} else if (!strcmp(line.key,
-						   "other_browser_cmd")) {
-					if (!(oldcfg_seen &
-					      SWB_CONFIG_OTHER_BROWSER_CMD_SET)) {
-						fprintf(tmpfp, "%s = \"%s\"\n",
-							line.key,
-							cfg->other_browser_cmd);
-						oldcfg_seen |=
-							SWB_CONFIG_OTHER_BROWSER_CMD_SET;
-					}
-				} else if (!strcmp(line.key,
-						   "logging")) {
-					if (!(oldcfg_seen &
-					      SWB_CONFIG_LOGGING_SET)) {
-						fprintf(tmpfp, "%s = \"%s\"\n",
-							line.key,
-							cfg->logging);
-						oldcfg_seen |=
-							SWB_CONFIG_LOGGING_SET;
-					}
-				}
+				swb_config_output_option(tmpfp, &oldcfg_seen,
+							 cfg, line.key);
 			} else {
 				/* Just copy the old line over */
 				fprintf(tmpfp, "%s\n", line.key);
@@ -129,22 +126,9 @@ int swb_config_save(struct swb_config *cfg) {
 	}
 
 	/* If we haven't written them yet, write out any new config values */
-	if (!(oldcfg_seen & SWB_CONFIG_CONTINUOUS_MODE_SET) &&
-	    (cfg->flags & SWB_CONFIG_CONTINUOUS_MODE_SET))
-		fprintf(tmpfp, "%s = %d\n",
-			"continuous_mode", cfg->continuous_mode);
-	if (!(oldcfg_seen & SWB_CONFIG_DEFAULT_BROWSER_SET) &&
-	    (cfg->flags & SWB_CONFIG_DEFAULT_BROWSER_SET))
-		fprintf(tmpfp, "%s = \"%s\"\n",
-			"default_browser", cfg->default_browser);
-	if (!(oldcfg_seen & SWB_CONFIG_OTHER_BROWSER_CMD_SET) &&
-	    (cfg->flags & SWB_CONFIG_OTHER_BROWSER_CMD_SET))
-		fprintf(tmpfp, "%s = \"%s\"\n",
-			"other_browser_cmd", cfg->other_browser_cmd);
-	if (!(oldcfg_seen & SWB_CONFIG_LOGGING_SET) &&
-	    (cfg->flags & SWB_CONFIG_LOGGING_SET))
-		fprintf(tmpfp, "%s = \"%s\"\n",
-			"logging", cfg->logging);
+	for (i = 0; swb_config_options[i].name; ++i)
+		swb_config_output_option(tmpfp, &oldcfg_seen, cfg,
+					 swb_config_options[i].name);
 
 	/* Replace the old config file with the new one */
 	fclose(tmpfp);

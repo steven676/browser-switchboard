@@ -14,7 +14,9 @@ PREFIX = /usr
 other_obj = ../configfile.o ../config.o save-config.o
 
 APP = browser-switchboard-cp
+UTIL = browser-switchboard-config
 app_obj = $(APP).app.o $(other_obj)
+util_obj = $(UTIL).o $(other_obj)
 HILDON_APP = $(APP)-hildon
 happ_obj = $(APP).happ.o $(other_obj)
 PLUGIN = lib$(APP).so
@@ -23,11 +25,13 @@ plugin_obj = $(APP).plugin.o ../configfile.plugin.o ../config.plugin.o save-conf
 all:
 	@echo 'Usage:'
 	@echo '    make app -- build standalone GTK+ application'
+	@echo '    make util -- build command-line configuration utility'
 	@echo '    make diablo-hildon-app -- build standalone Diablo Hildon application'
 	@echo '    make diablo-plugin -- build Diablo hildon-control-panel plugin'
 	@echo '    make fremantle-hildon-app -- build standalone Fremantle Hildon application'
 	@echo '    make fremantle-plugin -- build Fremantle hildon-control-panel plugin'
 app: $(APP)
+util: $(UTIL)
 diablo-hildon-app: $(HILDON_APP)
 diablo-plugin: $(PLUGIN)
 fremantle-hildon-app:
@@ -40,6 +44,9 @@ $(APP): $(app_obj)
 
 %.app.o: %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+$(UTIL): $(util_obj)
+	$(CC) $(CFLAGS) -o $(UTIL) $(util_obj) $(LDFLAGS)
 
 $(HILDON_APP): $(happ_obj)
 	$(CC) $(CFLAGS) -o $(HILDON_APP) $(happ_obj) \
@@ -69,6 +76,6 @@ install-plugin: $(PLUGIN)
 	install -c -m 0644 $(APP).desktop $(DESTDIR)$(PREFIX)/share/applications/hildon-control-panel
 
 clean:
-	rm -f $(APP) $(HILDON_APP) $(PLUGIN) $(app_obj) $(happ_obj) $(plugin_obj)
+	rm -f $(APP) $(UTIL) $(HILDON_APP) $(PLUGIN) $(app_obj) $(util_obj) $(happ_obj) $(plugin_obj)
 
-.PHONY: strip strip-plugin install install-plugin app diablo-hildon-app diablo-plugin fremantle-hildon-app fremantle-plugin
+.PHONY: strip strip-plugin install install-plugin app util diablo-hildon-app diablo-plugin fremantle-hildon-app fremantle-plugin

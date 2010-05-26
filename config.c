@@ -108,12 +108,12 @@ static int swb_config_load_option(struct swb_config *cfg,
 		if (!(cfg->flags & opt.set_mask)) {
 			switch (opt.type) {
 			  case SWB_CONFIG_OPT_STRING:
-				  *(char **)cfg->entries[i] = value;
-				  break;
+				*(char **)cfg->entries[i] = value;
+				break;
 			  case SWB_CONFIG_OPT_INT:
-				  *(int *)cfg->entries[i] = atoi(value);
-				  free(value);
-				  break;
+				*(int *)cfg->entries[i] = atoi(value);
+				free(value);
+				break;
 			}
 			cfg->flags |= opt.set_mask;
 		}

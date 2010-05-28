@@ -14,10 +14,10 @@ Conflicts: browser-proxy, fennec-dbus-client
 Description: allows any web browser to be used as the default
  Browser Switchboard is a program which allows you to choose
  which browser to use as the default browser.  It supports
- MicroB, Tear, Fennec/Mobile Firefox, and Midori out of the box,
- and can easily be extended to support other browsers.  It can
- also launch MicroB without having a large background process
- (browserd) running at all times, saving memory when MicroB 
- isn't in use.
+ MicroB, Tear, Mobile Firefox, Opera Mobile, and Midori out of
+ the box, and can easily be extended to support other
+ browsers.  It can also launch MicroB without having a large
+ background process (browserd) running at all times, saving
+ memory when MicroB isn't in use.
 XB-Maemo-Display-Name: Browser Switchboard
 Homepage: http://browser-switch.garage.maemo.org/

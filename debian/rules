@@ -9,13 +9,13 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-ifeq ($(DEB_HOST_ARCH),armel)
+#ifeq ($(DEB_HOST_ARCH),armel)
 	#EXTRA_CFLAGS += -mcpu=arm1136jf-s
 	# Use Thumb for smaller binaries unless otherwise requested
-	ifeq (,$(filter nothumb,$(DEB_BUILD_OPTIONS)))
-		EXTRA_CFLAGS += -mthumb
-	endif
-endif
+	#ifeq (,$(filter nothumb,$(DEB_BUILD_OPTIONS)))
+	#	EXTRA_CFLAGS += -mthumb
+	#endif
+#endif
 
 configure: configure-stamp
 configure-stamp:

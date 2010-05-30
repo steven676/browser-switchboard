@@ -64,7 +64,7 @@ struct browser_entry {
 	char *displayname;
 };
 struct browser_entry browsers[] = {
-	{ "microb", "MicroB" },	/* First entry is the default! */
+	{ "microb", "MicroB (stock browser)" }, /* First entry is the default! */
 	{ "tear", "Tear" },
 	{ "fennec", "Mobile Firefox (Fennec)" },
 	{ "opera", "Opera Mobile" },

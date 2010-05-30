@@ -67,6 +67,7 @@ struct browser_entry browsers[] = {
 	{ "microb", "MicroB (stock browser)" }, /* First entry is the default! */
 	{ "tear", "Tear" },
 	{ "fennec", "Mobile Firefox (Fennec)" },
+	{ "opera", "Opera Mobile" },
 	{ "midori", "Midori" },
 	{ "other", "Other" },
 	{ NULL, NULL },

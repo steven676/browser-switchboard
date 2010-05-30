@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 #include "configfile.h"
@@ -96,17 +97,17 @@ void swb_config_free(struct swb_config *cfg) {
 /* Load a value into the part of a struct swb_config indicated by name */
 static int swb_config_load_option(struct swb_config *cfg,
 				  char *name, char *value) {
-	int i;
-	struct swb_config_option opt;
+	struct swb_config_option *opt;
+	ptrdiff_t i;
 	int retval = 0;
 
-	for (i = 0; swb_config_options[i].name; ++i) {
-		opt = swb_config_options[i];
-		if (strcmp(name, opt.name))
+	for (opt = swb_config_options; opt->name; ++opt) {
+		if (strcmp(name, opt->name))
 			continue;
 
-		if (!(cfg->flags & opt.set_mask)) {
-			switch (opt.type) {
+		if (!(cfg->flags & opt->set_mask)) {
+			i = opt - swb_config_options;
+			switch (opt->type) {
 			  case SWB_CONFIG_OPT_STRING:
 				*(char **)cfg->entries[i] = value;
 				break;
@@ -115,7 +116,7 @@ static int swb_config_load_option(struct swb_config *cfg,
 				free(value);
 				break;
 			}
-			cfg->flags |= opt.set_mask;
+			cfg->flags |= opt->set_mask;
 		}
 		retval = 1;
 		break;

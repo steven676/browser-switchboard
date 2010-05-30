@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -35,28 +36,28 @@ extern struct swb_config_option swb_config_options[];
 /* Outputs a config file line for the named option to a file descriptor */
 static void swb_config_output_option(FILE *fp, unsigned int *oldcfg_seen,
 			      struct swb_config *cfg, char *name) {
-	int i;
-	struct swb_config_option opt;
+	struct swb_config_option *opt;
+	ptrdiff_t i;
 	
-	for (i = 0; swb_config_options[i].name; ++i) {
-		opt = swb_config_options[i];
-		if (strcmp(opt.name, name))
+	for (opt = swb_config_options; opt->name; ++opt) {
+		if (strcmp(opt->name, name))
 			continue;
 
-		if (!(*oldcfg_seen & opt.set_mask) &&
-		    (cfg->flags & opt.set_mask)) {
-			switch (opt.type) {
+		i = opt - swb_config_options;
+		if (!(*oldcfg_seen & opt->set_mask) &&
+		    (cfg->flags & opt->set_mask)) {
+			switch (opt->type) {
 			  case SWB_CONFIG_OPT_STRING:
 				fprintf(fp, "%s = \"%s\"\n",
-					opt.name,
+					opt->name,
 					*(char **)cfg->entries[i]);
-				*oldcfg_seen |= opt.set_mask;
+				*oldcfg_seen |= opt->set_mask;
 				break;
 			  case SWB_CONFIG_OPT_INT:
 				fprintf(fp, "%s = %d\n",
-					opt.name,
+					opt->name,
 					*(int *)cfg->entries[i]);
-				*oldcfg_seen |= opt.set_mask;
+				*oldcfg_seen |= opt->set_mask;
 				break;
 			}
 		}

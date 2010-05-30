@@ -22,6 +22,7 @@
 
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -32,8 +33,8 @@ extern struct swb_config_option swb_config_options[];
 
 static int get_config_value(char *name) {
 	struct swb_config cfg;
-	int i;
-	struct swb_config_option optinfo;
+	struct swb_config_option *optinfo;
+	ptrdiff_t i;
 	int retval = 1;
 
 	swb_config_init(&cfg);
@@ -41,12 +42,12 @@ static int get_config_value(char *name) {
 	if (!swb_config_load(&cfg))
 		return 1;
 
-	for (i = 0; swb_config_options[i].name; ++i) {
-		optinfo = swb_config_options[i];
-		if (strcmp(name, optinfo.name))
+	for (optinfo = swb_config_options; optinfo->name; ++optinfo) {
+		if (strcmp(name, optinfo->name))
 			continue;
 
-		switch (optinfo.type) {
+		i = optinfo - swb_config_options;
+		switch (optinfo->type) {
 		  case SWB_CONFIG_OPT_STRING:
 			printf("%s\n", *(char **)cfg.entries[i]);
 			break;
@@ -67,8 +68,8 @@ static int get_config_value(char *name) {
 
 static int set_config_value(char *name, char *value) {
 	struct swb_config cfg;
-	int i;
-	struct swb_config_option optinfo;
+	struct swb_config_option *optinfo;
+	ptrdiff_t i;
 	int retval = 1;
 
 	swb_config_init(&cfg);
@@ -76,39 +77,39 @@ static int set_config_value(char *name, char *value) {
 	if (!swb_config_load(&cfg))
 		return 1;
 
-	for (i = 0; swb_config_options[i].name; ++i) {
-		optinfo = swb_config_options[i];
-		if (strcmp(name, optinfo.name))
+	for (optinfo = swb_config_options; optinfo->name; ++optinfo) {
+		if (strcmp(name, optinfo->name))
 			continue;
 
-		switch (optinfo.type) {
+		i = optinfo - swb_config_options;
+		switch (optinfo->type) {
 		  case SWB_CONFIG_OPT_STRING:
 			/* Free any existing string */
-			if (cfg.flags & optinfo.set_mask)
+			if (cfg.flags & optinfo->set_mask)
 				free(*(char **)cfg.entries[i]);
 
 			if (strlen(value) == 0) {
 				/* If the new value is empty, clear the config
 				   setting */
 				*(char **)cfg.entries[i] = NULL;
-				cfg.flags &= ~optinfo.set_mask;
+				cfg.flags &= ~optinfo->set_mask;
 			} else {
 				/* Make a copy of the string -- it's not safe
 				   to free value, which comes from argv */
 				if (!(*(char **)cfg.entries[i] =
 				      strdup(value)))
 					exit(1);
-				cfg.flags |= optinfo.set_mask;
+				cfg.flags |= optinfo->set_mask;
 			}
 			break;
 		  case SWB_CONFIG_OPT_INT:
 			if (strlen(value) == 0) {
 				/* If the new value is empty, clear the config
 				   setting */
-				cfg.flags &= ~optinfo.set_mask;
+				cfg.flags &= ~optinfo->set_mask;
 			} else {
 				*(int *)cfg.entries[i] = atoi(value);
-				cfg.flags |= optinfo.set_mask;
+				cfg.flags |= optinfo->set_mask;
 			}
 			break;
 		}

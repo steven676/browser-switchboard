@@ -51,6 +51,7 @@ struct browser_launcher {
 	char *name;
 	void (*launcher)(struct swb_context *, char *);
 	char *other_browser_cmd;
+	char *binary;
 };
 
 #ifdef FREMANTLE
@@ -602,12 +603,12 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 
 /* The list of known browsers and how to launch them */
 static struct browser_launcher browser_launchers[] = {
-	{ "microb", launch_microb, NULL }, /* First entry is the default! */
-	{ "tear", launch_tear, NULL },
-	{ "fennec", NULL, "fennec %s" },
-	{ "opera", NULL, "opera %s" },
-	{ "midori", NULL, "midori %s" },
-	{ NULL, NULL, NULL },
+	{ "microb", launch_microb, NULL, NULL }, /* First entry is the default! */
+	{ "tear", launch_tear, NULL, "/usr/bin/tear" },
+	{ "fennec", NULL, "fennec %s", "/usr/bin/fennec" },
+	{ "opera", NULL, "opera %s", "/usr/bin/opera" },
+	{ "midori", NULL, "midori %s", "/usr/bin/midori" },
+	{ NULL, NULL, NULL, NULL },
 };
 
 static void use_launcher_as_default(struct swb_context *ctx,
@@ -653,8 +654,14 @@ void update_default_browser(struct swb_context *ctx, char *default_browser) {
 	   it matches */
 	for (browser = browser_launchers; browser->name; ++browser)
 		if (!strcmp(default_browser, browser->name)) {
-			use_launcher_as_default(ctx, browser);
-			return;
+			/* Make sure the user's choice is installed on the
+			   system */
+			if (browser->binary && !access(browser->binary, X_OK)) {
+				use_launcher_as_default(ctx, browser);
+				return;
+			} else
+				log_msg("%s appears not to be installed\n",
+					default_browser);
 		}
 
 	/* Deal with default_browser = "other" */

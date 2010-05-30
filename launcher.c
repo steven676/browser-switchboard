@@ -610,27 +610,6 @@ static struct browser_launcher browser_launchers[] = {
 	{ NULL, NULL, NULL },
 };
 
-/* Use launch_other_browser as the default browser launcher, with the string
-   passed in as the other_browser_cmd
-   Resulting other_browser_cmd is always safe to free(), even if a pointer
-   to a string constant is passed in */
-static void use_other_browser_cmd(struct swb_context *ctx, char *cmd) {
-	size_t len = strlen(cmd);
-
-	free(ctx->other_browser_cmd);
-	ctx->other_browser_cmd = calloc(len+1, sizeof(char));
-	if (!ctx->other_browser_cmd) {
-		log_msg("malloc failed!\n");
-		/* Ideally, we'd configure the built-in default here -- but
-		   it's possible we could be called in that path */
-		exit(1);
-	} else {
-		ctx->other_browser_cmd = strncpy(ctx->other_browser_cmd,
-						 cmd, len+1);
-		ctx->default_browser_launcher = launch_other_browser;
-	}
-}
-
 static void use_launcher_as_default(struct swb_context *ctx,
 				    struct browser_launcher *browser) {
 	if (!ctx || !browser)
@@ -638,8 +617,20 @@ static void use_launcher_as_default(struct swb_context *ctx,
 
 	if (browser->launcher)
 		ctx->default_browser_launcher = browser->launcher;
-	else if (browser->other_browser_cmd)
-		use_other_browser_cmd(ctx, browser->other_browser_cmd);
+	else if (browser->other_browser_cmd) {
+		free(ctx->other_browser_cmd);
+
+		/* Make a copy of the string constant so that
+		   ctx->other_browser_cmd is safe to free() */
+		ctx->other_browser_cmd = strdup(browser->other_browser_cmd);
+		if (!ctx->other_browser_cmd) {
+			log_msg("malloc failed!\n");
+			/* Ideally, we'd configure the built-in default here --
+			   but it's possible we could be called in that path */
+			exit(1);
+		} else
+			ctx->default_browser_launcher = launch_other_browser;
+	}
 
 	return;
 }

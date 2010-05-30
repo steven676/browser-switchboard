@@ -73,22 +73,24 @@ void swb_config_init(struct swb_config *cfg) {
 /* Free all heap memory used in an swb_config struct
    This MUST NOT be done if any of the strings are being used elsewhere! */
 void swb_config_free(struct swb_config *cfg) {
+	int i;
+
 	if (!cfg)
 		return;
 	if (!(cfg->flags & SWB_CONFIG_INITIALIZED))
 		return;
 
-	if (cfg->flags & SWB_CONFIG_DEFAULT_BROWSER_SET) {
-		free(cfg->default_browser);
-		cfg->default_browser = NULL;
-	}
-	if (cfg->flags & SWB_CONFIG_OTHER_BROWSER_CMD_SET) {
-		free(cfg->other_browser_cmd);
-		cfg->other_browser_cmd = NULL;
-	}
-	if (cfg->flags & SWB_CONFIG_LOGGING_SET) {
-		free(cfg->logging);
-		cfg->logging = NULL;
+	for (i = 0; swb_config_options[i].name; ++i) {
+		if (cfg->flags & swb_config_options[i].set_mask) {
+			switch (swb_config_options[i].type) {
+			  case SWB_CONFIG_OPT_STRING:
+				free(*(char **)cfg->entries[i]);
+				*(char **)cfg->entries[i] = NULL;
+				break;
+			  default:
+				break;
+			}
+		}
 	}
 
 	cfg->flags = 0;

@@ -27,6 +27,9 @@ struct swb_context {
 	int continuous_mode;
 	void (*default_browser_launcher)(struct swb_context *, char *);
 	char *other_browser_cmd;
+#ifdef FREMANTLE
+	int autostart_microb;
+#endif
 	DBusGConnection *session_bus;
 	DBusGProxy *dbus_proxy;
 };

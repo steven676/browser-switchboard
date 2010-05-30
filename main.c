@@ -59,6 +59,9 @@ static void read_config(int signalnum) {
 	} else
 		ctx.other_browser_cmd = NULL;
 	update_default_browser(&ctx, cfg.default_browser);
+#ifdef FREMANTLE
+	ctx.autostart_microb = cfg.autostart_microb;
+#endif
 
 	log_msg("continuous_mode: %d\n", cfg.continuous_mode);
 	log_msg("default_browser: '%s'\n", cfg.default_browser);

@@ -238,6 +238,45 @@ void microb_start_dbus_watch_remove(DBusConnection *conn) {
 	dbus_connection_unref(conn);
 }
 
+/* Start a new MicroB browser process if one isn't already running */
+pid_t launch_microb_start_browser_process(DBusConnection *conn, int fd) {
+	pid_t pid;
+	int status;
+
+	status = system("pidof browser > /dev/null");
+	if (WIFEXITED(status) && !WEXITSTATUS(status)) {
+		/* MicroB browser already running */
+		return 0;
+	}
+
+	if ((pid = fork()) == -1) {
+		log_perror(errno, "fork");
+		return -1;
+	}
+
+	if (!pid) {
+		/* Child process */
+		dbus_connection_close(conn);
+		dbus_connection_unref(conn);
+		if (fd != -1)
+			close(fd);
+		close_stdio();
+
+		/* exec maemo-invoker directly instead of relying on the
+		   /usr/bin/browser symlink, since /usr/bin/browser may have
+		   been replaced with a shell script calling us via D-Bus */
+		/* Launch the browser in the background -- our parent will
+		   wait for it to claim the D-Bus name and then display the
+		   window using D-Bus */
+		execl("/usr/bin/maemo-invoker", "browser", (char *)NULL);
+
+		/* If we get here, exec() failed */
+		exit(1);
+	}
+
+	return pid;
+}
+
 /* Open a MicroB window using the D-Bus interface
    It's assumed that we have already released the D-Bus name and that it's been
    ensured that MicroB has acquired com.nokia.osso_browser (otherwise this will
@@ -351,29 +390,12 @@ void launch_microb_fremantle_with_kill(struct swb_context *ctx, char *uri) {
 		exit(1);
 	}
 
-	if ((pid = fork()) == -1) {
-		log_perror(errno, "fork");
+	/* Launch a MicroB browser process if it's not already running */
+	if ((pid = launch_microb_start_browser_process(raw_connection, fd)) < 0)
 		exit(1);
-	}
 
-	if (!pid) {
-		/* Child process */
-		dbus_connection_close(raw_connection);
-		dbus_connection_unref(raw_connection);
-		close(fd);
-		close_stdio();
-
-		/* exec maemo-invoker directly instead of relying on the
-		   /usr/bin/browser symlink, since /usr/bin/browser may have
-		   been replaced with a shell script calling us via D-Bus */
-		/* Launch the browser in the background -- our parent will
-		   wait for it to claim the D-Bus name and then display the
-		   window using D-Bus */
-		execl("/usr/bin/maemo-invoker", "browser", (char *)NULL);
-
-		/* If we get here, exec() failed */
-		exit(1);
-	}
+	/* Release the osso_browser D-Bus name so that MicroB can take it */
+	dbus_release_osso_browser_name(ctx);
 
 	/* Wait for our child to start the browser UI process and
 	   for it to acquire the com.nokia.osso_browser D-Bus name,
@@ -397,45 +419,55 @@ void launch_microb_fremantle_with_kill(struct swb_context *ctx, char *uri) {
 	   that I can think of.  Better suggestions would be greatly
 	   appreciated. */
 
-	/* Wait for the MicroB browserd lockfile to be created */
-	log_msg("Waiting for browserd lockfile to be created\n");
-	memset(buf, '\0', 256);
-	/* read() blocks until there are events to be read */
-	while ((bytes_read = read(fd, buf, 255)) > 0) {
-		pos = buf;
-		/* Loop until we see the event we're looking for
-		   or until all the events are processed */
-		while (pos && (pos-buf) < bytes_read) {
-			event = (struct inotify_event *)pos;
-			len = sizeof(struct inotify_event) + event->len;
-			if (!strcmp(MICROB_LOCKFILE, event->name)) {
-				/* Lockfile created */
-				pos = NULL;
-				break;
-			} else if ((pos-buf) + len < bytes_read)
-				/* More events to process */
-				pos += len;
-			else
-				/* All events processed */
-				break;
-		}
-		if (!pos)
-			/* Event found, stop looking */
-			break;
+	if (!pid)
+		/* If we didn't start the MicroB browser process ourselves, try
+		   to get the PID of the browserd from the lockfile */
+		browserd_pid = get_browserd_pid(microb_lockfile);
+	else
+		browserd_pid = 0;
+
+	/* If getting the lockfile PID failed, or the lockfile PID doesn't
+	   exist, assume that we have a stale lockfile and wait for the new
+	   browserd lockfile to be created */
+	if (browserd_pid <= 0 || kill(browserd_pid, 0) == ESRCH) {
+		log_msg("Waiting for browserd lockfile to be created\n");
 		memset(buf, '\0', 256);
+		/* read() blocks until there are events to be read */
+		while ((bytes_read = read(fd, buf, 255)) > 0) {
+			pos = buf;
+			/* Loop until we see the event we're looking for
+			   or until all the events are processed */
+			while (pos && (pos-buf) < bytes_read) {
+				event = (struct inotify_event *)pos;
+				len = sizeof(struct inotify_event) + event->len;
+				if (!strcmp(MICROB_LOCKFILE, event->name)) {
+					/* Lockfile created */
+					pos = NULL;
+					break;
+				} else if ((pos-buf) + len < bytes_read)
+					/* More events to process */
+					pos += len;
+				else
+					/* All events processed */
+					break;
+			}
+			if (!pos)
+				/* Event found, stop looking */
+				break;
+			memset(buf, '\0', 256);
+		}
+
+		if ((browserd_pid = get_browserd_pid(microb_lockfile)) <= 0) {
+			if (browserd_pid == 0)
+				log_msg("Profile lockfile link lacks PID\n");
+			else
+				log_perror(-browserd_pid,
+					   "readlink() on lockfile failed");
+			exit(1);
+		}
 	}
 	inotify_rm_watch(fd, inot_wd);
 	close(fd);
-
-	/* Get the PID of the browserd from the lockfile */
-	if ((browserd_pid = get_browserd_pid(microb_lockfile)) <= 0) {
-		if (browserd_pid == 0)
-			log_msg("Profile lockfile link lacks PID\n");
-		else
-			log_perror(-browserd_pid,
-				   "readlink() on lockfile failed");
-		exit(1);
-	}
 	free(microb_lockfile);
 
 	/* Wait for the browserd to close */
@@ -493,14 +525,53 @@ void launch_microb_fremantle_with_kill(struct swb_context *ctx, char *uri) {
 	   started browserd may not close with the UI
 	   XXX: Hope we don't cause data loss here! */
 	log_msg("Killing MicroB\n");
-	kill(pid, SIGTERM);
-	waitpid(pid, &status, 0);
+	if (pid > 0) {
+		kill(pid, SIGTERM);
+		waitpid(pid, &status, 0);
+	} else {
+		system("kill `pidof browser` > /dev/null 2>&1");
+	}
 
 	/* Restore old SIGCHLD handler */
 	if (sigaction(SIGCHLD, &oldact, NULL) == -1) {
 		log_perror(errno, "restoring old SIGCHLD handler failed");
 		exit(1);
 	}
+
+	dbus_request_osso_browser_name(ctx);
+}
+
+/* Launch a new window in Fremantle MicroB; don't kill the MicroB process
+   when the session is finished
+   This is designed to work with a prestarted MicroB process that runs
+   continuously in the background */
+void launch_microb_fremantle(struct swb_context *ctx, char *uri) {
+	DBusConnection *raw_connection;
+
+	/* Set up the D-Bus eavesdropping we'll use to watch for MicroB
+	   acquiring the com.nokia.osso_browser D-Bus name */
+	if (!(raw_connection = microb_start_dbus_watch_init())) {
+		exit(1);
+	}
+
+	/* Launch a MicroB browser process if it's not already running */
+	if (launch_microb_start_browser_process(raw_connection, -1) < 0)
+		exit(1);
+
+	/* Release the osso_browser D-Bus name so that MicroB can take it */
+	dbus_release_osso_browser_name(ctx);
+
+	/* Wait for MicroB to acquire com.nokia.osso_browser, then make the
+	   appropriate method call to open the browser window. */
+	microb_start_dbus_watch_wait(raw_connection);
+	microb_start_dbus_watch_remove(raw_connection);
+	if (!launch_microb_open_window(ctx, uri,
+				       LAUNCH_MICROB_BOOKMARK_WIN_OK)) {
+		exit(1);
+	}
+
+	/* Take back the osso_browser D-Bus name from MicroB */
+	dbus_request_osso_browser_name(ctx);
 }
 #endif /* FREMANTLE */
 
@@ -527,13 +598,24 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 #endif
 	}
 
+#ifdef FREMANTLE
+	/* Do the insanity to launch Fremantle MicroB */
+	if ((ctx->default_browser_launcher == launch_microb &&
+	     ctx->autostart_microb) || ctx->autostart_microb == 1) {
+
+		/* If MicroB is set as the default browser, or if the user has
+		   configured MicroB to always be running, just send the
+		   running MicroB the request */
+		launch_microb_fremantle(ctx, uri);
+	} else {
+		/* Otherwise, launch MicroB and kill it when the user's
+		   MicroB session is done */
+		launch_microb_fremantle_with_kill(ctx, uri);
+	}
+#else /* !FREMANTLE */
 	/* Release the osso_browser D-Bus name so that MicroB can take it */
 	dbus_release_osso_browser_name(ctx);
 
-#ifdef FREMANTLE
-	/* Do the insanity to launch Fremantle MicroB */
-	launch_microb_fremantle_with_kill(ctx, uri);
-#else /* !FREMANTLE */
 	if ((pid = fork()) == -1) {
 		log_perror(errno, "fork");
 		exit(1);
@@ -557,6 +639,8 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 			      "browser", "--url", uri, (char *)NULL);
 		}
 	}
+
+	dbus_request_osso_browser_name(ctx);
 #endif /* FREMANTLE */
 
 	/* Kill off browserd if we started it */
@@ -565,8 +649,6 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 
 	if (!ctx || !ctx->continuous_mode) 
 		exit(0);
-
-	dbus_request_osso_browser_name(ctx);
 }
 
 static void launch_other_browser(struct swb_context *ctx, char *uri) {

@@ -51,7 +51,7 @@
 #endif /* HILDON_CP_APPLET */
 #endif /* HILDON */
 
-#include "configfile.h"
+#include "config.h"
 
 #define CONTINUOUS_MODE_DEFAULT 0
 
@@ -64,7 +64,7 @@ struct browser_entry {
 	char *displayname;
 };
 struct browser_entry browsers[] = {
-	{ "microb", "MicroB" },	/* First entry is the default! */
+	{ "microb", "MicroB (stock browser)" }, /* First entry is the default! */
 	{ "tear", "Tear" },
 	{ "fennec", "Mobile Firefox (Fennec)" },
 	{ "midori", "Midori" },
@@ -72,7 +72,7 @@ struct browser_entry browsers[] = {
 	{ NULL, NULL },
 };
 
-char *logger_name = NULL;
+struct swb_config orig_cfg;
 
 struct config_widgets {
 #if defined(HILDON) && defined(FREMANTLE)
@@ -151,170 +151,40 @@ static inline void set_other_browser_cmd(char *cmd) {
 }
 
 static void load_config(void) {
-	FILE *fp;
-	int continuous_mode_seen = 0;
-	int default_browser_seen = 0;
-	int other_browser_cmd_seen = 0;
-	struct swb_config_line line;
+	swb_config_init(&orig_cfg);
+	
+	swb_config_load(&orig_cfg);
 
-	if (!(fp = open_config_file()))
-		return;
-
-	/* Parse the config file
-	   TODO: should we handle errors differently than EOF? */
-	if (!parse_config_file_begin())
-		goto out;
-	while (!parse_config_file_line(fp, &line)) {
-		if (line.parsed) {
-			if (!strcmp(line.key, "continuous_mode")) {
-				if (!continuous_mode_seen) {
-					set_continuous_mode(atoi(line.value));
-					continuous_mode_seen = 1;
-				}
-				free(line.value);
-			} else if (!strcmp(line.key, "default_browser")) {
-				if (!default_browser_seen) {
-					set_default_browser(line.value);
-					default_browser_seen = 1;
-				}
-				free(line.value);
-			} else if (!strcmp(line.key, "other_browser_cmd")) {
-				if (!other_browser_cmd_seen) {
-					set_other_browser_cmd(line.value);
-					other_browser_cmd_seen = 1;
-				}
-				free(line.value);
-			} else if (!strcmp(line.key, "logging")) {
-				if (!logger_name)
-					logger_name = line.value;
-			}
-		}
-		free(line.key);
-	}
-	parse_config_file_end();
-
-out:
-	fclose(fp);
-	return;
+	set_continuous_mode(orig_cfg.continuous_mode);
+	set_default_browser(orig_cfg.default_browser);
+	if (orig_cfg.other_browser_cmd)
+		set_other_browser_cmd(orig_cfg.other_browser_cmd);
 }
 
 static void save_config(void) {
-	FILE *fp = NULL, *tmpfp = NULL;
-	char *homedir, *tempfile, *newfile;
-	size_t len;
-	int continuous_mode_seen = 0;
-	int default_browser_seen = 0;
-	int other_browser_cmd_seen = 0;
-	struct swb_config_line line;
+	struct swb_config new_cfg;
 
-	/* If CONFIGFILE_DIR doesn't exist already, try to create it */
-	if (!(homedir = getenv("HOME")))
-		homedir = DEFAULT_HOMEDIR;
-	len = strlen(homedir) + strlen(CONFIGFILE_DIR) + 1;
-	if (!(newfile = calloc(len, sizeof(char))))
-		return;
-	snprintf(newfile, len, "%s%s", homedir, CONFIGFILE_DIR);
-	if (access(newfile, F_OK) == -1 && errno == ENOENT) {
-		mkdir(newfile, 0750);
+	swb_config_copy(&new_cfg, &orig_cfg);
+
+	if (get_continuous_mode() != orig_cfg.continuous_mode) {
+		new_cfg.continuous_mode = get_continuous_mode();
+		new_cfg.flags |= SWB_CONFIG_CONTINUOUS_MODE_SET;
 	}
-	free(newfile);
-
-	/* Put together the path to the new config file and the tempfile */
-	len = strlen(homedir) + strlen(CONFIGFILE_LOC) + 1;
-	if (!(newfile = calloc(len, sizeof(char))))
-		return;
-	/* 4 = strlen(".tmp") */
-	if (!(tempfile = calloc(len+4, sizeof(char)))) {
-		free(newfile);
-		return;
+	if (strcmp(get_default_browser(), orig_cfg.default_browser)) {
+		new_cfg.default_browser = get_default_browser();
+		new_cfg.flags |= SWB_CONFIG_DEFAULT_BROWSER_SET;
 	}
-	snprintf(newfile, len, "%s%s", homedir, CONFIGFILE_LOC);
-	snprintf(tempfile, len+4, "%s%s", newfile, ".tmp");
-
-	/* Open the temporary file for writing */
-	if (!(tmpfp = fopen(tempfile, "w")))
-		/* TODO: report the error somehow? */
-		goto out;
-
-	/* Open the old config file, if it exists */
-	if ((fp = open_config_file()) && parse_config_file_begin()) {
-		/* Copy the old config file over to the new one line by line,
-		   replacing old config values with new ones
-		   TODO: should we handle errors differently than EOF? */
-		while (!parse_config_file_line(fp, &line)) {
-			if (line.parsed) {
-				/* Is a config line, print the new value here */
-				if (!strcmp(line.key, "continuous_mode")) {
-					if (!continuous_mode_seen) {
-						fprintf(tmpfp, "%s = %d\n",
-							line.key,
-							get_continuous_mode());
-						continuous_mode_seen = 1;
-					}
-				} else if (!strcmp(line.key,
-							"default_browser")) {
-					if (!default_browser_seen) {
-						fprintf(tmpfp, "%s = \"%s\"\n",
-							line.key,
-							get_default_browser());
-						default_browser_seen = 1;
-					}
-				} else if (!strcmp(line.key,
-							"other_browser_cmd")) {
-					if (!other_browser_cmd_seen &&
-					    strlen(get_other_browser_cmd())>0) {
-						fprintf(tmpfp, "%s = \"%s\"\n",
-							line.key,
-							get_other_browser_cmd());
-						other_browser_cmd_seen = 1;
-					}
-				} else if (!strcmp(line.key,
-							"logging")) {
-					if (logger_name) {
-						fprintf(tmpfp, "%s = \"%s\"\n",
-							line.key,
-							logger_name);
-						free(logger_name);
-						logger_name = NULL;
-					}
-				}
-			} else {
-				/* Just copy the old line over */
-				fprintf(tmpfp, "%s\n", line.key);
-			}
-			free(line.key);
-			free(line.value);
-		}
-		parse_config_file_end();
+	if (strlen(get_other_browser_cmd()) == 0) {
+		new_cfg.other_browser_cmd = NULL;
+		new_cfg.flags &= ~SWB_CONFIG_OTHER_BROWSER_CMD_SET;
+	} else if (!(orig_cfg.other_browser_cmd &&
+		     !strcmp(get_other_browser_cmd(),
+			     orig_cfg.other_browser_cmd))) {
+		new_cfg.other_browser_cmd = get_other_browser_cmd();
+		new_cfg.flags |= SWB_CONFIG_OTHER_BROWSER_CMD_SET;
 	}
 
-	/* If we haven't written them yet, write out the new config values */
-	if (!continuous_mode_seen)
-		fprintf(tmpfp, "%s = %d\n",
-			"continuous_mode", get_continuous_mode());
-	if (!default_browser_seen)
-		fprintf(tmpfp, "%s = \"%s\"\n",
-			"default_browser", get_default_browser());
-	if (!other_browser_cmd_seen && strlen(get_other_browser_cmd()) > 0)
-		fprintf(tmpfp, "%s = \"%s\"\n",
-			"other_browser_cmd", get_other_browser_cmd());
-	if (logger_name)
-		fprintf(tmpfp, "%s = \"%s\"\n",
-			"logging", logger_name);
-
-	/* Replace the old config file with the new one */
-	fclose(tmpfp);
-	tmpfp = NULL;
-	rename(tempfile, newfile);
-
-out:
-	free(newfile);
-	free(tempfile);
-	if (tmpfp)
-		fclose(tmpfp);
-	if (fp)
-		fclose(fp);
-	return;
+	swb_config_save(&new_cfg);
 }
 
 static void do_reconfig(void) {

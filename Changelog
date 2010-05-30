@@ -1,3 +1,13 @@
+version 3.3:
+* add support for Opera Mobile
+* fall back to the built-in default if the user's configured default browser
+  isn't installed
+* introduce a command-line config utility; this is mainly intended to give
+  browser vendors a way to set their browser as the default
+* provide a description for users who don't know what MicroB is; thanks
+  Emanuele Cassioli for pointing out the need
+* major rewrite of configuration loading/saving code
+
 version 3.2:
 * make the "Web" menu entry and /usr/bin/browser open the default browser, and
   provide a new "MicroB" menu entry and /usr/bin/microb script for launching

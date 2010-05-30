@@ -47,7 +47,12 @@
 #include "dbus-server-bindings.h"
 #include "log.h"
 
-#define LAUNCH_DEFAULT_BROWSER launch_microb
+struct browser_launcher {
+	char *name;
+	void (*launcher)(struct swb_context *, char *);
+	char *other_browser_cmd;
+	char *binary;
+};
 
 #ifdef FREMANTLE
 static int microb_started = 0;
@@ -134,7 +139,7 @@ static void launch_tear(struct swb_context *ctx, char *uri) {
 		if (!tear_proxy) {
 			if (!(tear_proxy = dbus_g_proxy_new_for_name(
 						ctx->session_bus,
-				       		"com.nokia.tear",
+						"com.nokia.tear",
 						"/com/nokia/tear",
 						"com.nokia.Tear"))) {
 				log_msg("Failed to create proxy for com.nokia.Tear D-Bus interface\n");
@@ -386,7 +391,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 				/* Event found, stop looking */
 				break;
 			memset(buf, '\0', 256);
-                }
+		}
 		inotify_rm_watch(fd, inot_wd);
 		close(fd);
 
@@ -595,57 +600,83 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 	execl("/bin/sh", "/bin/sh", "-c", command, (char *)NULL);
 }
 
-/* Use launch_other_browser as the default browser launcher, with the string
-   passed in as the other_browser_cmd
-   Resulting other_browser_cmd is always safe to free(), even if a pointer
-   to a string constant is passed in */
-static void use_other_browser_cmd(struct swb_context *ctx, char *cmd) {
-	size_t len = strlen(cmd);
 
-	free(ctx->other_browser_cmd);
-	ctx->other_browser_cmd = calloc(len+1, sizeof(char));
-	if (!ctx->other_browser_cmd) {
-		log_msg("malloc failed!\n");
-		ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
-	} else {
-		ctx->other_browser_cmd = strncpy(ctx->other_browser_cmd,
-						 cmd, len+1);
-		ctx->default_browser_launcher = launch_other_browser;
+/* The list of known browsers and how to launch them */
+static struct browser_launcher browser_launchers[] = {
+	{ "microb", launch_microb, NULL, NULL }, /* First entry is the default! */
+	{ "tear", launch_tear, NULL, "/usr/bin/tear" },
+	{ "fennec", NULL, "fennec %s", "/usr/bin/fennec" },
+	{ "opera", NULL, "opera %s", "/usr/bin/opera" },
+	{ "midori", NULL, "midori %s", "/usr/bin/midori" },
+	{ NULL, NULL, NULL, NULL },
+};
+
+static void use_launcher_as_default(struct swb_context *ctx,
+				    struct browser_launcher *browser) {
+	if (!ctx || !browser)
+		return;
+
+	if (browser->launcher)
+		ctx->default_browser_launcher = browser->launcher;
+	else if (browser->other_browser_cmd) {
+		free(ctx->other_browser_cmd);
+
+		/* Make a copy of the string constant so that
+		   ctx->other_browser_cmd is safe to free() */
+		ctx->other_browser_cmd = strdup(browser->other_browser_cmd);
+		if (!ctx->other_browser_cmd) {
+			log_msg("malloc failed!\n");
+			/* Ideally, we'd configure the built-in default here --
+			   but it's possible we could be called in that path */
+			exit(1);
+		} else
+			ctx->default_browser_launcher = launch_other_browser;
 	}
+
+	return;
 }
 
 void update_default_browser(struct swb_context *ctx, char *default_browser) {
+	struct browser_launcher *browser;
+
 	if (!ctx)
 		return;
 
-	if (!default_browser) {
+	/* Configure the built-in default to start -- that way, we can
+	   handle errors by just returning */
+	use_launcher_as_default(ctx, &browser_launchers[0]);
+
+	if (!default_browser)
 		/* No default_browser configured -- use built-in default */
-		ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
+		return;
+
+	/* Go through the list of known browser launchers and use one if
+	   it matches */
+	for (browser = browser_launchers; browser->name; ++browser)
+		if (!strcmp(default_browser, browser->name)) {
+			/* Make sure the user's choice is installed on the
+			   system */
+			if (browser->binary && access(browser->binary, X_OK)) {
+				log_msg("%s appears not to be installed\n",
+					default_browser);
+			} else {
+				use_launcher_as_default(ctx, browser);
+				return;
+			}
+		}
+
+	/* Deal with default_browser = "other" */
+	if (!strcmp(default_browser, "other")) {
+		if (ctx->other_browser_cmd)
+			ctx->default_browser_launcher = launch_other_browser;
+		else
+			log_msg("default_browser is 'other', but no other_browser_cmd set -- using default\n");
 		return;
 	}
 
-	if (!strcmp(default_browser, "tear"))
-		ctx->default_browser_launcher = launch_tear;
-	else if (!strcmp(default_browser, "microb"))
-		ctx->default_browser_launcher = launch_microb;
-	else if (!strcmp(default_browser, "fennec"))
-		/* Cheat and reuse launch_other_browser, since we don't appear
-		   to need to do anything special */
-		use_other_browser_cmd(ctx, "fennec %s");
-	else if (!strcmp(default_browser, "midori"))
-		use_other_browser_cmd(ctx, "midori %s");
-	else if (!strcmp(default_browser, "other")) {
-		if (ctx->other_browser_cmd)
-			ctx->default_browser_launcher = launch_other_browser;
-		else {
-			log_msg("default_browser is 'other', but no other_browser_cmd set -- using default\n");
-			ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
-		}
-	} else {
-		log_msg("Unknown default_browser %s, using default",
-			default_browser);
-		ctx->default_browser_launcher = LAUNCH_DEFAULT_BROWSER;
-	}
+	/* Unknown value of default_browser */
+	log_msg("Unknown default_browser %s, using default\n", default_browser);
+	return;
 }
 
 void launch_browser(struct swb_context *ctx, char *uri) {

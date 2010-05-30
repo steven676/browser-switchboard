@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <dbus/dbus-glib.h>
@@ -30,19 +31,10 @@
 #include "browser-switchboard.h"
 #include "launcher.h"
 #include "dbus-server-bindings.h"
-#include "configfile.h"
+#include "config.h"
 #include "log.h"
 
 struct swb_context ctx;
-
-static void set_config_defaults(struct swb_context *ctx) {
-	if (!ctx)
-		return;
-	free(ctx->other_browser_cmd);
-	ctx->continuous_mode = 0;
-	ctx->default_browser_launcher = NULL;
-	ctx->other_browser_cmd = NULL;
-}
 
 static void waitforzombies(int signalnum) {
 	while (waitpid(-1, NULL, WNOHANG) > 0)
@@ -50,62 +42,31 @@ static void waitforzombies(int signalnum) {
 }
 
 static void read_config(int signalnum) {
-	FILE *fp;
-	int continuous_mode_seen = 0;
-	struct swb_config_line line;
-	char *default_browser = NULL, *logger_name = NULL;
+	struct swb_config cfg;
 
-	set_config_defaults(&ctx);
+	swb_config_init(&cfg);
 
-	if (!(fp = open_config_file()))
-		goto out_noopen;
+	swb_config_load(&cfg);
 
-	/* Parse the config file
-	   TODO: should we handle errors differently than EOF? */
-	if (!parse_config_file_begin())
-		goto out;
-	while (!parse_config_file_line(fp, &line)) {
-		if (line.parsed) {
-			if (!strcmp(line.key, "continuous_mode")) {
-				if (!continuous_mode_seen) {
-					ctx.continuous_mode = atoi(line.value);
-					continuous_mode_seen = 1;
-				}
-				free(line.value);
-			} else if (!strcmp(line.key, "default_browser")) {
-				if (!default_browser)
-					default_browser = line.value;
-			} else if (!strcmp(line.key, "other_browser_cmd")) {
-				if (!ctx.other_browser_cmd)
-					ctx.other_browser_cmd = line.value;
-			} else if (!strcmp(line.key, "logging")) {
-				if (!logger_name)
-					logger_name = line.value;
-			} else {
-				/* Don't need this line's contents */
-				free(line.value);
-			}
+	log_config(cfg.logging);
+	ctx.continuous_mode = cfg.continuous_mode;
+	free(ctx.other_browser_cmd);
+	if (cfg.other_browser_cmd) {
+		if (!(ctx.other_browser_cmd = strdup(cfg.other_browser_cmd))) {
+			log_perror(errno, "Failed to set other_browser_cmd");
+			exit(1);
 		}
-		free(line.key);
-	}
-	parse_config_file_end();
+	} else
+		ctx.other_browser_cmd = NULL;
+	update_default_browser(&ctx, cfg.default_browser);
 
-out:
-	fclose(fp);
-out_noopen:
-	log_config(logger_name);
-	update_default_browser(&ctx, default_browser);
-
-	log_msg("continuous_mode: %d\n", ctx.continuous_mode);
-	log_msg("default_browser: '%s'\n",
-		default_browser?default_browser:"NULL");
+	log_msg("continuous_mode: %d\n", cfg.continuous_mode);
+	log_msg("default_browser: '%s'\n", cfg.default_browser);
 	log_msg("other_browser_cmd: '%s'\n",
-		ctx.other_browser_cmd?ctx.other_browser_cmd:"NULL");
-	log_msg("logging: '%s'\n",
-		logger_name?logger_name:"NULL");
+		cfg.other_browser_cmd?cfg.other_browser_cmd:"NULL");
+	log_msg("logging: '%s'\n", cfg.logging);
 
-	free(logger_name);
-	free(default_browser);
+	swb_config_free(&cfg);
 	return;
 }
 

@@ -1,5 +1,5 @@
 BROWSER SWITCHBOARD
-version 3.2
+version 3.3b1
 
 Browser Switchboard is a program which allows you to choose which
 browser to use as the default browser. It supports MicroB, Tear,
@@ -15,7 +15,9 @@ page on garage.maemo.org: https://garage.maemo.org/frs/?group_id=1159
 Quick Start:
 1. Download the binary package: browser-switchboard_X.Y-Z_all.deb
 (where X.Y-Z is the version number, of course).
-2. Install the package using the Application Manager (open the
+2. If you're using a Maemo 5 device, make sure all your MicroB browser
+windows are closed.
+3. Install the package using the Application Manager (open the
 Application Manager, then select Application->Install from file in the
 menu).
 

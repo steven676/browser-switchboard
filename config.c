@@ -33,6 +33,7 @@ struct swb_config_option swb_config_options[] = {
 	{ "default_browser", SWB_CONFIG_OPT_STRING, SWB_CONFIG_DEFAULT_BROWSER_SET },
 	{ "other_browser_cmd", SWB_CONFIG_OPT_STRING, SWB_CONFIG_OTHER_BROWSER_CMD_SET },
 	{ "logging", SWB_CONFIG_OPT_STRING, SWB_CONFIG_LOGGING_SET },
+	{ "autostart_microb", SWB_CONFIG_OPT_INT, SWB_CONFIG_AUTOSTART_MICROB_SET },
 	{ NULL, 0, 0 },
 };
 
@@ -43,6 +44,7 @@ static struct swb_config swb_config_defaults = {
 	.default_browser = "microb",
 	.other_browser_cmd = NULL,
 	.logging = "stdout",
+	.autostart_microb = -1,
 };
 
 
@@ -56,6 +58,7 @@ void swb_config_copy(struct swb_config *dst, struct swb_config *src) {
 	dst->entries[1] = &(dst->default_browser);
 	dst->entries[2] = &(dst->other_browser_cmd);
 	dst->entries[3] = &(dst->logging);
+	dst->entries[4] = &(dst->autostart_microb);
 
 	dst->flags = src->flags;
 
@@ -63,6 +66,7 @@ void swb_config_copy(struct swb_config *dst, struct swb_config *src) {
 	dst->default_browser = src->default_browser;
 	dst->other_browser_cmd = src->other_browser_cmd;
 	dst->logging = src->logging;
+	dst->autostart_microb = src->autostart_microb;
 }
 
 /* Initialize a swb_config struct with configuration defaults */

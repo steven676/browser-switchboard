@@ -78,6 +78,11 @@ default_browser = "tear"
 #other_browser_cmd = "some_browser %s"
 # logging: Where log output should go: "stdout", "syslog", "none"
 #logging = "stdout"
+# autostart_microb: Fremantle only: whether MicroB should be
+# prestarted in the background: 0 -- never prestart MicroB; 1 -- always
+# prestart MicroB; -1 -- only prestart MicroB when MicroB is the default
+# browser (default behavior if unset)
+#autostart_microb = 0
 # END SAMPLE CONFIG FILE
 
 Lines beginning with # characters are comments and are ignored by the
@@ -117,6 +122,13 @@ default option is "stdout", which means you won't see output unless you
 run Browser Switchboard from the shell.  "syslog" will send the output
 to the system log (assuming you have a syslogd set up on your device),
 and "none" disables debug logging entirely.
+
+On Fremantle only, autostart_microb controls whether MicroB is
+prestarted when the device boots.  By default, MicroB is prestarted only
+when MicroB is set as the default browser; you can force MicroB to
+always prestart by setting autostart_microb = 1, while you can force it
+to never prestart by setting autostart_microb = 0.  [This option has no
+corresponding UI at the moment.]
 
 
 Browser Switchboard and MicroB's browserd:

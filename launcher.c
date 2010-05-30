@@ -656,12 +656,13 @@ void update_default_browser(struct swb_context *ctx, char *default_browser) {
 		if (!strcmp(default_browser, browser->name)) {
 			/* Make sure the user's choice is installed on the
 			   system */
-			if (browser->binary && !access(browser->binary, X_OK)) {
-				use_launcher_as_default(ctx, browser);
-				return;
-			} else
+			if (browser->binary && access(browser->binary, X_OK)) {
 				log_msg("%s appears not to be installed\n",
 					default_browser);
+			} else {
+				use_launcher_as_default(ctx, browser);
+				return;
+			}
 		}
 
 	/* Deal with default_browser = "other" */

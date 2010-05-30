@@ -1,3 +1,9 @@
+browser-switchboard (3.3~b1-1fremantle1) extras-devel; urgency=low
+
+  * Development release for Fremantle.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sun, 30 May 2010 03:23:17 -0700 
+
 browser-switchboard (3.3~b1-1) extras-devel; urgency=low
 
   * New "upstream" development release.

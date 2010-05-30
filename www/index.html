@@ -17,14 +17,15 @@
 
 <p>Browser Switchboard (formerly browser-proxy) is a program which allows
 you to choose which browser to use as the default browser on Maemo devices.
-It supports MicroB, Tear, Fennec/Mobile Firefox, and Midori out of the box,
+It supports MicroB, Tear, Mobile Firefox, Opera Mobile, and Midori out of the box,
 and can also be used to launch MicroB without having browserd running.</p>
 
 <h2>Current Release</h2>
-<p>Version 3.2 (2010/02/22) (<a href="browser-switchboard.install">Diablo one-click install</a>, <a href="https://garage.maemo.org/frs/download.php/7593/browser-switchboard_3.2-1fremantle1_armel.deb">Beta-quality Fremantle package</a>)</p>
+<p>Version 3.2-2 (2010/05/28) (<a href="browser-switchboard.install">Diablo one-click install</a>, <a href="https://garage.maemo.org/frs/download.php/8174/browser-switchboard_3.2-2fremantle1_armel.deb">Beta-quality Fremantle package</a>)</p>
 <ul>
 <li>Make the "Web" menu entry and /usr/bin/browser script open the selected default browser, and provide a new "MicroB" menu entry and /usr/bin/microb script for launching MicroB.</li>
 <li>[Fremantle] Launching and closing MicroB now works! Many thanks to everyone who tested this and provided feedback, especially Faheem Pervez and Uwe Kaminski.</li>
+<li>Add support for Opera Mobile.</li>
 <li>[Fremantle] Restarting the device after a fresh install of Browser Switchboard should no longer be necessary. Make sure you close any open MicroB browser windows before installing/upgrading, though! (Restarting after installation has never been required on Diablo.)</li>
 <li>[Fremantle] Force the Ovi Store bookmark to open in MicroB, since Ovi Store doesn't load in other browsers. Thanks to ToJa92 of the talk.maemo.org forums for reporting this.</li>
 <li>Add the ability to send debug logging output to syslog as well as the terminal, and add a config setting "logging={stdout,syslog,none}" to configure it. Thanks to Faheem Pervez for the suggestion.</li>
@@ -48,8 +49,8 @@ will install the package from Maemo Extras for you.</p>
 can be found on the Maemo Garage
 <a href="https://garage.maemo.org/frs/?group_id=1159">download page</a>.
 Packages can also be installed from the Maemo
-<a href="http://wiki.maemo.org/Extras-testing">extras-testing repository</a>
-(though don't blindly enable extras-testing and install/upgrade &mdash; see
+<a href="http://wiki.maemo.org/Extras-devel">extras-devel repository</a>
+(though don't blindly enable extras-devel and install/upgrade &mdash; see
 the linked page first!)</p>
 
 <h2>Quick Start</h2>

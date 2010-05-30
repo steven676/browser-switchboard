@@ -64,18 +64,23 @@ $(PLUGIN): $(plugin_obj)
 	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) $(CPPFLAGS) $(CPPFLAGS_PLUGIN) \
 		-c -o $@ $<
 
-strip: strip-plugin
+strip: strip-plugin strip-util
 strip-plugin: $(PLUGIN)
 	strip $(PLUGIN)
+strip-util: $(UTIL)
+	strip ($UTIL)
 
-install: install-plugin
+install: install-plugin install-util
 install-plugin: $(PLUGIN)
 	mkdir -p $(DESTDIR)$(PREFIX)/lib/hildon-control-panel
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications/hildon-control-panel
 	install -c -m 0755 $(PLUGIN) $(DESTDIR)$(PREFIX)/lib/hildon-control-panel
 	install -c -m 0644 $(APP).desktop $(DESTDIR)$(PREFIX)/share/applications/hildon-control-panel
+install-util: $(UTIL)
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	install -c -m 0755 $(UTIL) $(DESTDIR)$(PREFIX)/bin
 
 clean:
 	rm -f $(APP) $(UTIL) $(HILDON_APP) $(PLUGIN) $(app_obj) $(util_obj) $(happ_obj) $(plugin_obj)
 
-.PHONY: strip strip-plugin install install-plugin app util diablo-hildon-app diablo-plugin fremantle-hildon-app fremantle-plugin
+.PHONY: strip strip-plugin strip-util install install-plugin install-util app util diablo-hildon-app diablo-plugin fremantle-hildon-app fremantle-plugin

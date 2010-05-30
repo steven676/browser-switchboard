@@ -29,7 +29,7 @@ build-stamp: configure-stamp
 	dh_testdir
 
 	make EXTRA_CFLAGS="$(EXTRA_CFLAGS)" diablo
-	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)" diablo-plugin
+	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)" diablo-plugin util
 
 	touch $@
 

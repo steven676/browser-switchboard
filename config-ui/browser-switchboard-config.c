@@ -49,7 +49,8 @@ static int get_config_value(char *name) {
 		i = optinfo - swb_config_options;
 		switch (optinfo->type) {
 		  case SWB_CONFIG_OPT_STRING:
-			printf("%s\n", *(char **)cfg.entries[i]);
+			if (*(char **)cfg.entries[i])
+				printf("%s\n", *(char **)cfg.entries[i]);
 			break;
 		  case SWB_CONFIG_OPT_INT:
 			printf("%d\n", *(int *)cfg.entries[i]);

@@ -1,6 +1,26 @@
+browser-switchboard (3.3~b1-1) extras-devel; urgency=low
+
+  * New "upstream" development release.
+  * Upstream changes:
+    - add support for Opera Mobile
+    - fall back to the built-in default if the user's configured default
+      browser isn't installed
+    - introduce a command-line config utility; this is mainly intended to give
+      browser vendors a way to set their browser as the default
+    - provide a description for users who don't know what MicroB is; thanks
+      Emanuele Cassioli for pointing out the need
+    - major rewrite of configuration loading/saving code
+  * Cherry-pick addb0ed9... ("Add command-line utility to Makefile install
+    target").
+  * Packaging changes:
+    - Build and install the new command-line config utility.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sun, 30 May 2010 02:52:31 -0700 
+
 browser-switchboard (3.2-2) extras-devel; urgency=low
 
   * Cherry-pick ebfd6218... ("Add preliminary support for Opera Mobile").
+  * Update package description to mention Opera Mobile.
 
  -- Steven Luo <steven+maemo@steven676.net>  Fri, 28 May 2010 01:35:22 -0700 
 

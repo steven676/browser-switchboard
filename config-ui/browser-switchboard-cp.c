@@ -175,10 +175,12 @@ static void save_config(void) {
 		new_cfg.default_browser = get_default_browser();
 		new_cfg.flags |= SWB_CONFIG_DEFAULT_BROWSER_SET;
 	}
-	if ((orig_cfg.other_browser_cmd &&
-	     strcmp(get_other_browser_cmd(), orig_cfg.other_browser_cmd)) ||
-	    (!orig_cfg.other_browser_cmd &&
-	     strlen(get_other_browser_cmd()) > 0)) {
+	if (strlen(get_other_browser_cmd()) == 0) {
+		new_cfg.other_browser_cmd = NULL;
+		new_cfg.flags &= ~SWB_CONFIG_OTHER_BROWSER_CMD_SET;
+	} else if (!(orig_cfg.other_browser_cmd &&
+		     !strcmp(get_other_browser_cmd(),
+			     orig_cfg.other_browser_cmd))) {
 		new_cfg.other_browser_cmd = get_other_browser_cmd();
 		new_cfg.flags |= SWB_CONFIG_OTHER_BROWSER_CMD_SET;
 	}

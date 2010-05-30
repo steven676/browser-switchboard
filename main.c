@@ -50,6 +50,7 @@ static void read_config(int signalnum) {
 
 	log_config(cfg.logging);
 	ctx.continuous_mode = cfg.continuous_mode;
+	free(ctx.other_browser_cmd);
 	if (cfg.other_browser_cmd) {
 		if (!(ctx.other_browser_cmd = strdup(cfg.other_browser_cmd))) {
 			log_perror(errno, "Failed to set other_browser_cmd");

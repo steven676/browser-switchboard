@@ -29,6 +29,8 @@ struct swb_context {
 	char *other_browser_cmd;
 	DBusGConnection *session_bus;
 	DBusGProxy *dbus_proxy;
+	DBusGConnection *system_bus;
+	DBusGProxy *dbus_system_proxy;
 };
 
 #endif /* _BROWSER_SWITCHBOARD_H */

@@ -147,7 +147,7 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 	GError *error = NULL;
 	guint result;
 
-	if (!ctx || !ctx->dbus_proxy)
+	if (!ctx || !ctx->dbus_proxy || !ctx->dbus_system_proxy)
 		return;
 
 	if (!dbus_g_proxy_call(ctx->dbus_proxy, "RequestName", &error,
@@ -163,6 +163,20 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
+
+	if (!dbus_g_proxy_call(ctx->dbus_system_proxy, "RequestName", &error,
+			       G_TYPE_STRING, "com.nokia.osso_browser",
+			       G_TYPE_UINT, DBUS_NAME_FLAG_REPLACE_EXISTING|DBUS_NAME_FLAG_DO_NOT_QUEUE,
+			       G_TYPE_INVALID,
+			       G_TYPE_UINT, &result,
+			       G_TYPE_INVALID)) {
+		log_msg("Couldn't acquire name com.nokia.osso_browser on system bus\n");
+		exit(1);
+	}
+	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {	
+		log_msg("Couldn't acquire name com.nokia.osso_browser on system bus\n");
+		exit(1);
+	}
 }
 
 /* Release the name com.nokia.osso_browser on the D-Bus session bus */
@@ -170,10 +184,15 @@ void dbus_release_osso_browser_name(struct swb_context *ctx) {
 	GError *error = NULL;
 	guint result;
 
-	if (!ctx || !ctx->dbus_proxy)
+	if (!ctx || !ctx->dbus_proxy || !ctx->dbus_system_proxy)
 		return;
 
 	dbus_g_proxy_call(ctx->dbus_proxy, "ReleaseName", &error,
+			  G_TYPE_STRING, "com.nokia.osso_browser",
+			  G_TYPE_INVALID,
+			  G_TYPE_UINT, &result,
+			  G_TYPE_INVALID);
+	dbus_g_proxy_call(ctx->dbus_system_proxy, "ReleaseName", &error,
 			  G_TYPE_STRING, "com.nokia.osso_browser",
 			  G_TYPE_INVALID,
 			  G_TYPE_UINT, &result,

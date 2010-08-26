@@ -53,7 +53,7 @@ static void read_config(int signalnum) {
 	/* continuous mode is required on Fremantle */
 	ctx.continuous_mode = 1;
 	if (!cfg.continuous_mode)
-		log_msg("WARNING: continuous_mode = 0 operation no longer supported, ignoring config setting");
+		log_msg("continuous_mode = 0 operation no longer supported, ignoring config setting\n");
 #else
 	ctx.continuous_mode = cfg.continuous_mode;
 #endif

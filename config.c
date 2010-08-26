@@ -101,8 +101,8 @@ static int swb_config_load_option(struct swb_config *cfg,
 				  char *name, char *value) {
 	struct swb_config_option *opt;
 	ptrdiff_t i;
-	int retval = 0;
 
+	/* Search through list of recognized config options for a match */
 	for (opt = swb_config_options; opt->name; ++opt) {
 		if (strcmp(name, opt->name))
 			continue;
@@ -124,14 +124,13 @@ static int swb_config_load_option(struct swb_config *cfg,
 			   We want the first value, so ignore this one */
 			free(value);
 		}
-		retval = 1;
+		return 1;
 		break;
 	}
 
-	if (!retval)
-		free(value);
-
-	return retval;
+	/* Unrecognized config option */
+	free(value);
+	return 0;
 }
 
 /* Read the config file and load settings into the provided swb_config struct

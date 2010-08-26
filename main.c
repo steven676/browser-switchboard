@@ -49,7 +49,14 @@ static void read_config(int signalnum) {
 	swb_config_load(&cfg);
 
 	log_config(cfg.logging);
+#ifdef FREMANTLE
+	/* continuous mode is required on Fremantle */
+	ctx.continuous_mode = 1;
+	if (!cfg.continuous_mode)
+		log_msg("WARNING: continuous_mode = 0 operation no longer supported, ignoring config setting");
+#else
 	ctx.continuous_mode = cfg.continuous_mode;
+#endif
 	free(ctx.other_browser_cmd);
 	if (cfg.other_browser_cmd) {
 		if (!(ctx.other_browser_cmd = strdup(cfg.other_browser_cmd))) {

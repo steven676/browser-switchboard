@@ -160,7 +160,7 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
-	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {	
+	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
 		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
@@ -177,7 +177,7 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 		log_msg("Couldn't acquire name com.nokia.osso_browser on system bus\n");
 		g_error_free(error);
 	}
-	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {	
+	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
 		log_msg("Couldn't acquire name com.nokia.osso_browser on system bus\n");
 	}
 }

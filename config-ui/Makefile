@@ -58,7 +58,7 @@ $(HILDON_APP): $(happ_obj)
 $(PLUGIN): $(plugin_obj)
 	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) -o $(PLUGIN) $(plugin_obj) \
 		$(LDFLAGS) $(LDFLAGS_PLUGIN)
-		
+
 
 %.plugin.o: %.c
 	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) $(CPPFLAGS) $(CPPFLAGS_PLUGIN) \

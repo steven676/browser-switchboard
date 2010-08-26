@@ -142,7 +142,7 @@ int main() {
 			error->message);
 		return 1;
 	}
-	if (reqname_result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {  
+	if (reqname_result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
 		log_msg("Another browser-switchboard already running\n");
 		return 1;
 	}

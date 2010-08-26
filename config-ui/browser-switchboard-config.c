@@ -1,5 +1,5 @@
 /*
- * browser-switchboard-config.c -- command-line configuration utility for 
+ * browser-switchboard-config.c -- command-line configuration utility for
  * Browser Switchboard
  * 
  * Copyright (C) 2009-2010 Steven Luo
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
 	int opt, done = 0;
 	int set = 0;
 	char *selected_opt = NULL;
-	
+
 	while (!done && (opt = getopt(argc, argv, "hsbcmo:")) != -1) {
 		switch (opt) {
 		  case 'h':

@@ -517,7 +517,7 @@ void launch_microb(struct swb_context *ctx, char *uri) {
 	if (kill_browserd)
 		system("kill `pidof browserd`");
 
-	if (!ctx || !ctx->continuous_mode) 
+	if (!ctx || !ctx->continuous_mode)
 		exit(0);
 
 	dbus_request_osso_browser_name(ctx);
@@ -590,7 +590,7 @@ static void launch_other_browser(struct swb_context *ctx, char *uri) {
 			/* Parent process or error in fork() */
 			if (urilen > 0)
 				free(quoted_uri);
-			free(command);	
+			free(command);
 			return;
 		}
 		/* Child process */

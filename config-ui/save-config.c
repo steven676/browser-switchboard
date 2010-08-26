@@ -38,7 +38,7 @@ static void swb_config_output_option(FILE *fp, unsigned int *oldcfg_seen,
 			      struct swb_config *cfg, char *name) {
 	struct swb_config_option *opt;
 	ptrdiff_t i;
-	
+
 	for (opt = swb_config_options; opt->name; ++opt) {
 		if (strcmp(opt->name, name))
 			continue;

@@ -125,7 +125,6 @@ static int swb_config_load_option(struct swb_config *cfg,
 			free(value);
 		}
 		return 1;
-		break;
 	}
 
 	/* Unrecognized config option */

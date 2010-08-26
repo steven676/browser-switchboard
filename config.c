@@ -119,6 +119,10 @@ static int swb_config_load_option(struct swb_config *cfg,
 				break;
 			}
 			cfg->flags |= opt->set_mask;
+		} else {
+			/* Option was repeated in the config file
+			   We want the first value, so ignore this one */
+			free(value);
 		}
 		retval = 1;
 		break;

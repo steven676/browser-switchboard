@@ -39,7 +39,7 @@ struct swb_config_option swb_config_options[] = {
 /* Browser Switchboard configuration defaults */
 static struct swb_config swb_config_defaults = {
 	.flags = SWB_CONFIG_INITIALIZED,
-	.continuous_mode = 0,
+	.continuous_mode = 1,
 	.default_browser = "microb",
 	.other_browser_cmd = NULL,
 	.logging = "stdout",

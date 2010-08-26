@@ -77,7 +77,6 @@ struct swb_config orig_cfg;
 
 struct config_widgets {
 #if defined(HILDON) && defined(FREMANTLE)
-	GtkWidget *continuous_mode_selector;
 	GtkWidget *default_browser_selector;
 #else
 	GtkWidget *continuous_mode_off_radio;
@@ -96,13 +95,6 @@ GtkWidget *dialog;
  **********************************************************************/
 
 #if defined(HILDON) && defined(FREMANTLE)
-
-static inline int get_continuous_mode(void) {
-	return hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), 0);
-}
-static inline void set_continuous_mode(int state) {
-	hildon_touch_selector_set_active(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), 0, state);
-}
 
 static inline char *get_default_browser(void) {
 	return browsers[hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0)].config;
@@ -156,7 +148,9 @@ static void load_config(void) {
 	
 	swb_config_load(&orig_cfg);
 
+#ifndef FREMANTLE
 	set_continuous_mode(orig_cfg.continuous_mode);
+#endif
 	set_default_browser(orig_cfg.default_browser);
 	if (orig_cfg.other_browser_cmd)
 		set_other_browser_cmd(orig_cfg.other_browser_cmd);
@@ -167,10 +161,12 @@ static void save_config(void) {
 
 	swb_config_copy(&new_cfg, &orig_cfg);
 
+#ifndef FREMANTLE
 	if (get_continuous_mode() != orig_cfg.continuous_mode) {
 		new_cfg.continuous_mode = get_continuous_mode();
 		new_cfg.flags |= SWB_CONFIG_CONTINUOUS_MODE_SET;
 	}
+#endif
 	if (strcmp(get_default_browser(), orig_cfg.default_browser)) {
 		new_cfg.default_browser = get_default_browser();
 		new_cfg.flags |= SWB_CONFIG_DEFAULT_BROWSER_SET;
@@ -232,7 +228,6 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	GtkWidget *dialog_vbox;
 
 	GtkWidget *default_browser_selector_button;
-	GtkWidget *continuous_mode_selector_button;
 	int i;
 	HildonGtkInputMode input_mode;
 
@@ -280,20 +275,6 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	hildon_gtk_widget_set_theme_size(cw.other_browser_cmd_entry_label, _HILDON_SIZE_DEFAULT);
 	gtk_box_pack_start(GTK_BOX(dialog_vbox),
 			   cw.other_browser_cmd_entry_label, FALSE, FALSE, 0);
-
-	cw.continuous_mode_selector = hildon_touch_selector_new_text();
-	hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), "Lower memory usage");
-	hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), "Faster browser startup time");
-
-	continuous_mode_selector_button = hildon_picker_button_new(_HILDON_SIZE_DEFAULT, HILDON_BUTTON_ARRANGEMENT_VERTICAL);
-	hildon_button_set_title(HILDON_BUTTON(continuous_mode_selector_button),
-				"Optimize Browser Switchboard for:");
-	hildon_picker_button_set_selector(HILDON_PICKER_BUTTON(continuous_mode_selector_button), HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector));
-	hildon_button_set_alignment(HILDON_BUTTON(continuous_mode_selector_button),
-				    0, 0, 0, 0);
-	set_continuous_mode(CONTINUOUS_MODE_DEFAULT);
-	gtk_box_pack_start(GTK_BOX(dialog_vbox),
-			   continuous_mode_selector_button, FALSE, FALSE, 0);
 
 	gtk_widget_show_all(dialog);
 	return GTK_DIALOG(dialog);

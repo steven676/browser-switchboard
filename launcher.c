@@ -226,6 +226,8 @@ void microb_start_dbus_watch_remove(DBusConnection *conn) {
 	DBusError dbus_error;
 	DBusHandleMessageFunction filter_func = check_microb_started;
 
+	dbus_error_init(&dbus_error);
+
 	dbus_connection_remove_filter(conn, filter_func, NULL);
 	dbus_bus_remove_match(conn,
 			      "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='com.nokia.osso_browser'",

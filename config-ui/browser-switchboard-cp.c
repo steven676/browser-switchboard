@@ -52,26 +52,13 @@
 #endif /* HILDON */
 
 #include "config.h"
+#include "browsers.h"
 
 #define CONTINUOUS_MODE_DEFAULT 0
 
 #if defined(HILDON) && defined(FREMANTLE)
 #define _HILDON_SIZE_DEFAULT (HILDON_SIZE_AUTO_WIDTH|HILDON_SIZE_FINGER_HEIGHT)
 #endif
-
-struct browser_entry {
-	char *config;
-	char *displayname;
-};
-struct browser_entry browsers[] = {
-	{ "microb", "MicroB (stock browser)" }, /* First entry is the default! */
-	{ "tear", "Tear" },
-	{ "fennec", "Mobile Firefox (Fennec)" },
-	{ "opera", "Opera Mobile" },
-	{ "midori", "Midori" },
-	{ "other", "Other" },
-	{ NULL, NULL },
-};
 
 struct swb_config orig_cfg;
 
@@ -90,6 +77,21 @@ struct config_widgets cw;
 GtkWidget *dialog;
 
 
+struct browser_entry *installed_browsers;
+void init_installed_browsers(void) {
+	struct browser_entry *cur = browsers;
+	unsigned int count = 0;
+
+	installed_browsers = calloc(sizeof browsers, 1);
+	if (!installed_browsers)
+		exit(1);
+
+	count = 0;
+	for (; cur->config; ++cur)
+		if (!cur->binary || !access(cur->binary, X_OK))
+			installed_browsers[count++] = *cur;
+}
+
 /**********************************************************************
  * Configuration routines
  **********************************************************************/
@@ -97,7 +99,7 @@ GtkWidget *dialog;
 #if defined(HILDON) && defined(FREMANTLE)
 
 static inline char *get_default_browser(void) {
-	return browsers[hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0)].config;
+	return installed_browsers[hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0)].config;
 }
 
 #else /* !defined(HILDON) || !defined(FREMANTLE) */
@@ -113,7 +115,7 @@ static inline void set_continuous_mode(int state) {
 }
 
 static inline char *get_default_browser(void) {
-	return browsers[gtk_combo_box_get_active(GTK_COMBO_BOX(cw.default_browser_combo))].config;
+	return installed_browsers[gtk_combo_box_get_active(GTK_COMBO_BOX(cw.default_browser_combo))].config;
 }
 
 #endif /* defined(HILDON) && defined(FREMANTLE) */
@@ -122,10 +124,11 @@ static void set_default_browser(char *browser) {
 	gint i;
 
 	/* Loop through browsers looking for a match */
-	for (i = 0; browsers[i].config && strcmp(browsers[i].config, browser);
-			++i);
+	for (i = 0;
+	     installed_browsers[i].config && strcmp(installed_browsers[i].config, browser);
+	     ++i);
 
-	if (!browsers[i].config)
+	if (!installed_browsers[i].config)
 		/* No match found, set to the default browser */
 		i = 0;
 
@@ -244,9 +247,10 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	dialog_vbox = GTK_DIALOG(dialog)->vbox;
 
 	/* Config options */
+	init_installed_browsers();
 	cw.default_browser_selector = hildon_touch_selector_new_text();
-	for (i = 0; browsers[i].config; ++i)
-		hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), browsers[i].displayname);
+	for (i = 0; installed_browsers[i].config; ++i)
+		hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), installed_browsers[i].displayname);
 	hildon_touch_selector_set_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0, 0);
 	default_browser_selector_button = hildon_picker_button_new(_HILDON_SIZE_DEFAULT, HILDON_BUTTON_ARRANGEMENT_HORIZONTAL);
 	hildon_button_set_title(HILDON_BUTTON(default_browser_selector_button),
@@ -312,10 +316,11 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	gtk_table_set_row_spacings(GTK_TABLE(options_table), 5);
 	gtk_box_pack_start(GTK_BOX(dialog_vbox), options_table, FALSE, FALSE, 0);
 
+	init_installed_browsers();
 	cw.default_browser_combo = gtk_combo_box_new_text();
-	for (i = 0; browsers[i].config; ++i)
+	for (i = 0; installed_browsers[i].config; ++i)
 		gtk_combo_box_append_text(GTK_COMBO_BOX(cw.default_browser_combo),
-					  browsers[i].displayname);
+					  installed_browsers[i].displayname);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cw.default_browser_combo), 0);
 	default_browser_combo_label = gtk_label_new("Default browser:");
 	gtk_misc_set_alignment(GTK_MISC(default_browser_combo_label), 1, 0.5);

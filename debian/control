@@ -17,7 +17,7 @@ Description: allows any web browser to be used as the default
  which browser to use as the default browser.  It supports
  MicroB, Tear, Mobile Firefox, Opera Mobile, and Midori out of
  the box, and can easily be extended to support other
- browsers.  A Control Panel applet to choose the default
+ browsers.  A Settings menu entry to choose the default
  browser is provided.
 XB-Maemo-Display-Name: Browser Switchboard
 Homepage: http://browser-switch.garage.maemo.org/

@@ -25,9 +25,11 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <getopt.h>
 
 #include "config.h"
+#include "browsers.h"
 
 extern struct swb_config_option swb_config_options[];
 
@@ -65,6 +67,39 @@ static int get_config_value(char *name) {
 	swb_config_free(&cfg);
 
 	return retval;
+}
+
+static int get_default_browser(void) {
+	struct swb_config cfg;
+	int i;
+
+	swb_config_init(&cfg);
+
+	if (!swb_config_load(&cfg))
+		return 1;
+
+	/* Check to see if the configured default browser is installed
+	   If not, report the default default browser */
+	for (i = 0; browsers[i].config; ++i) {
+		if (strcmp(browsers[i].config, cfg.default_browser))
+			continue;
+
+		if (browsers[i].binary && access(browsers[i].binary, X_OK))
+			printf("%s\n", browsers[0].config);
+		else
+			printf("%s\n", browsers[i].config);
+
+		break;
+	}
+
+	if (!browsers[i].config)
+		/* Unknown browser configured as default, report the default
+		   default browser */
+		printf("%s\n", browsers[0].config);
+
+	swb_config_free(&cfg);
+
+	return 0;
 }
 
 static int set_config_value(char *name, char *value) {
@@ -194,6 +229,9 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		return set_config_value(selected_opt, argv[optind]);
-	} else
+	} else if (!strcmp(selected_opt, "default_browser"))
+		/* Default browser value needs special handling */
+		return get_default_browser();
+	else
 		return get_config_value(selected_opt);
 }

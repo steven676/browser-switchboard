@@ -1,14 +1,14 @@
 /*
  * browser-switchboard-cp.c -- a hildon-control-panel applet for
  * selecting the default browser for Browser Switchboard
- * 
+ *
  * Copyright (C) 2009-2010 Steven Luo
  * Copyright (C) 2009-2010 Faheem Pervez
- * 
+ *
  * Derived from services-cp.c from maemo-control-services
  * Copyright (c) 2008 Janne Kataja <janne.kataja@iki.fi>
  * Copyright (c) 2008 Nokia Corporation
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -148,7 +148,7 @@ static inline void set_other_browser_cmd(char *cmd) {
 
 static void load_config(void) {
 	swb_config_init(&orig_cfg);
-	
+
 	swb_config_load(&orig_cfg);
 
 #ifndef FREMANTLE

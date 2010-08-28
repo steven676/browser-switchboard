@@ -163,7 +163,7 @@ static int set_config_value(char *name, char *value) {
 	/* XXX can't free all of cfg, it contains pointers to memory we just
 	   freed above
 	swb_config_free(&cfg); */
-	if (optinfo->type == SWB_CONFIG_OPT_STRING)
+	if (optinfo->name && optinfo->type == SWB_CONFIG_OPT_STRING)
 		free(*(char **)cfg.entries[i]);
 
 	return retval;

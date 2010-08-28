@@ -1,3 +1,26 @@
+browser-switchboard (3.3~b2-1) extras-devel; urgency=low
+
+  * New "upstream" development release.
+  * Upstream changes:
+    - only offer installed browsers in the config GUI
+    - make continuous mode operation the default; disable non-continuous-mode
+      on Fremantle (needed for correct operation on D-Bus system bus)
+    - Fremantle: major overhaul of MicroB launching to improve robustness;
+      should result in speed and behavior indistinguishable from when Browser
+      Switchboard isn't installed when MicroB is configured as default browser
+    - listen on D-Bus system bus as well as session bus, to accommodate some
+      broken applications that send their requests on the system bus
+    - Fremantle: start browser-switchboard on X session startup, and also
+      prestart MicroB if it's the default browser or the user asks for it
+    - Fremantle: prestart MicroB when the user changes to MicroB as the default
+      browser
+  * Packaging changes:
+    - Update package description to mention that we ship a control panel
+      applet, to help users who don't read documentation.  Thanks to Emanuele
+      Cassioli for pointing out the need.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sat, 28 Aug 2010 04:55:39 -0700 
+
 browser-switchboard (3.3~b1-1) extras-devel; urgency=low
 
   * New "upstream" development release.

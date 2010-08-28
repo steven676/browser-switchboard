@@ -1,3 +1,16 @@
+browser-switchboard (3.3~b2-1fremantle1) extras-devel; urgency=low
+
+  * Development release for Fremantle.
+  * Packaging changes:
+    - Update debian/rules to build the Fremantle-specific command-line config
+      tool and install the Xsession.post script.
+    - Revise the postinst.  Now that we coexist with the MicroB browser
+      process, don't try to kill it in the postinst; instead, start
+      browser-switchboard as the user to make sure we handle links from the
+      get-go, and prestart MicroB if appropriate.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sat, 28 Aug 2010 05:19:42 -0700 
+  
 browser-switchboard (3.3~b2-1) extras-devel; urgency=low
 
   * New "upstream" development release.

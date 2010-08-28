@@ -28,7 +28,7 @@ build-stamp: configure-stamp
 	dh_testdir
 
 	make EXTRA_CFLAGS="$(EXTRA_CFLAGS)" fremantle
-	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)" fremantle-plugin util
+	make -C config-ui EXTRA_CFLAGS="$(EXTRA_CFLAGS)" fremantle-plugin fremantle-util
 
 	touch $@
 
@@ -50,7 +50,7 @@ install: build
 
 	# Add here commands to install the package into
 	# debian/browser-switchboard.
-	make DESTDIR=debian/browser-switchboard install
+	make DESTDIR=debian/browser-switchboard install install-xsession-script
 	make -C config-ui DESTDIR=../debian/browser-switchboard install
 	install -c -m 0644 debian/browser-switchboard-cp.desktop debian/browser-switchboard/usr/share/applications/hildon-control-panel
 	install -c -m 0644 debian/microb.desktop debian/browser-switchboard/usr/share/applications/hildon

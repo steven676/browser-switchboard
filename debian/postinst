@@ -20,13 +20,9 @@ set -e
 
 case "$1" in
     configure)
-	# If there's a MicroB browser process in the background, try to kill
-	# it off, because it's taking com.nokia.osso_browser and preventing
-	# us from working
-	browser_pids=`pidof browser || true`
-	if [ ! -z "$browser_pids" ]; then
-		kill $browser_pids || true
-	fi
+	# Try to start browser-switchboard as the user
+	# XXX: we're assuming here that the user is named "user"
+	/bin/su - user -c "/etc/X11/Xsession.post/35browser-switchboard" || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

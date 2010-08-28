@@ -123,10 +123,6 @@ static int set_config_value(char *name, char *value) {
 		i = optinfo - swb_config_options;
 		switch (optinfo->type) {
 		  case SWB_CONFIG_OPT_STRING:
-			/* Free any existing string */
-			if (cfg.flags & optinfo->set_mask)
-				free(*(char **)cfg.entries[i]);
-
 			if (strlen(value) == 0) {
 				/* If the new value is empty, clear the config
 				   setting */
@@ -164,7 +160,11 @@ static int set_config_value(char *name, char *value) {
 	swb_reconfig(&orig_cfg, &cfg);
 
 	swb_config_free(&orig_cfg);
-	swb_config_free(&cfg);
+	/* XXX can't free all of cfg, it contains pointers to memory we just
+	   freed above
+	swb_config_free(&cfg); */
+	if (optinfo->type == SWB_CONFIG_OPT_STRING)
+		free(*(char **)cfg.entries[i]);
 
 	return retval;
 }

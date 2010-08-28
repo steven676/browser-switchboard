@@ -49,7 +49,14 @@ static void read_config(int signalnum) {
 	swb_config_load(&cfg);
 
 	log_config(cfg.logging);
+#ifdef FREMANTLE
+	/* continuous mode is required on Fremantle */
+	ctx.continuous_mode = 1;
+	if (!cfg.continuous_mode)
+		log_msg("continuous_mode = 0 operation no longer supported, ignoring config setting\n");
+#else
 	ctx.continuous_mode = cfg.continuous_mode;
+#endif
 	free(ctx.other_browser_cmd);
 	if (cfg.other_browser_cmd) {
 		if (!(ctx.other_browser_cmd = strdup(cfg.other_browser_cmd))) {
@@ -59,6 +66,9 @@ static void read_config(int signalnum) {
 	} else
 		ctx.other_browser_cmd = NULL;
 	update_default_browser(&ctx, cfg.default_browser);
+#ifdef FREMANTLE
+	ctx.autostart_microb = cfg.autostart_microb;
+#endif
 
 	log_msg("continuous_mode: %d\n", cfg.continuous_mode);
 	log_msg("default_browser: '%s'\n", cfg.default_browser);
@@ -72,6 +82,7 @@ static void read_config(int signalnum) {
 
 int main() {
 	OssoBrowser *obj_osso_browser, *obj_osso_browser_req;
+	OssoBrowser *obj_osso_browser_sys, *obj_osso_browser_sys_req;
 	GMainLoop *mainloop;
 	GError *error = NULL;
 	int reqname_result;
@@ -134,8 +145,22 @@ int main() {
 			error->message);
 		return 1;
 	}
-	if (reqname_result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {  
+	if (reqname_result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
 		log_msg("Another browser-switchboard already running\n");
+		return 1;
+	}
+
+	/* Get a connection to the D-Bus system bus */
+	ctx.system_bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error);
+	if (!ctx.system_bus) {
+		log_msg("Couldn't get a D-Bus system bus connection\n");
+		return 1;
+	}
+	ctx.dbus_system_proxy = dbus_g_proxy_new_for_name(ctx.system_bus,
+			"org.freedesktop.DBus", "/org/freedesktop/DBus",
+			"org.freedesktop.DBus");
+	if (!ctx.dbus_system_proxy) {
+		log_msg("Couldn't get an org.freedesktop.DBus proxy\n");
 		return 1;
 	}
 
@@ -144,11 +169,19 @@ int main() {
 	/* Register ourselves to handle the osso_browser D-Bus methods */
 	obj_osso_browser = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	obj_osso_browser_req = g_object_new(OSSO_BROWSER_TYPE, NULL);
+	obj_osso_browser_sys = g_object_new(OSSO_BROWSER_TYPE, NULL);
+	obj_osso_browser_sys_req = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	dbus_g_connection_register_g_object(ctx.session_bus,
 			"/com/nokia/osso_browser", G_OBJECT(obj_osso_browser));
 	dbus_g_connection_register_g_object(ctx.session_bus,
 			"/com/nokia/osso_browser/request",
 			G_OBJECT(obj_osso_browser_req));
+	dbus_g_connection_register_g_object(ctx.system_bus,
+			"/com/nokia/osso_browser",
+			G_OBJECT(obj_osso_browser_sys));
+	dbus_g_connection_register_g_object(ctx.system_bus,
+			"/com/nokia/osso_browser/request",
+			G_OBJECT(obj_osso_browser_sys_req));
 
 	mainloop = g_main_loop_new(NULL, FALSE);
 	log_msg("Starting main loop\n");

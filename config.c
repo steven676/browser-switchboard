@@ -33,16 +33,18 @@ struct swb_config_option swb_config_options[] = {
 	{ "default_browser", SWB_CONFIG_OPT_STRING, SWB_CONFIG_DEFAULT_BROWSER_SET },
 	{ "other_browser_cmd", SWB_CONFIG_OPT_STRING, SWB_CONFIG_OTHER_BROWSER_CMD_SET },
 	{ "logging", SWB_CONFIG_OPT_STRING, SWB_CONFIG_LOGGING_SET },
+	{ "autostart_microb", SWB_CONFIG_OPT_INT, SWB_CONFIG_AUTOSTART_MICROB_SET },
 	{ NULL, 0, 0 },
 };
 
 /* Browser Switchboard configuration defaults */
 static struct swb_config swb_config_defaults = {
 	.flags = SWB_CONFIG_INITIALIZED,
-	.continuous_mode = 0,
+	.continuous_mode = 1,
 	.default_browser = "microb",
 	.other_browser_cmd = NULL,
 	.logging = "stdout",
+	.autostart_microb = -1,
 };
 
 
@@ -56,6 +58,7 @@ void swb_config_copy(struct swb_config *dst, struct swb_config *src) {
 	dst->entries[1] = &(dst->default_browser);
 	dst->entries[2] = &(dst->other_browser_cmd);
 	dst->entries[3] = &(dst->logging);
+	dst->entries[4] = &(dst->autostart_microb);
 
 	dst->flags = src->flags;
 
@@ -63,6 +66,7 @@ void swb_config_copy(struct swb_config *dst, struct swb_config *src) {
 	dst->default_browser = src->default_browser;
 	dst->other_browser_cmd = src->other_browser_cmd;
 	dst->logging = src->logging;
+	dst->autostart_microb = src->autostart_microb;
 }
 
 /* Initialize a swb_config struct with configuration defaults */
@@ -101,8 +105,8 @@ static int swb_config_load_option(struct swb_config *cfg,
 				  char *name, char *value) {
 	struct swb_config_option *opt;
 	ptrdiff_t i;
-	int retval = 0;
 
+	/* Search through list of recognized config options for a match */
 	for (opt = swb_config_options; opt->name; ++opt) {
 		if (strcmp(name, opt->name))
 			continue;
@@ -119,15 +123,17 @@ static int swb_config_load_option(struct swb_config *cfg,
 				break;
 			}
 			cfg->flags |= opt->set_mask;
+		} else {
+			/* Option was repeated in the config file
+			   We want the first value, so ignore this one */
+			free(value);
 		}
-		retval = 1;
-		break;
+		return 1;
 	}
 
-	if (!retval)
-		free(value);
-
-	return retval;
+	/* Unrecognized config option */
+	free(value);
+	return 0;
 }
 
 /* Read the config file and load settings into the provided swb_config struct

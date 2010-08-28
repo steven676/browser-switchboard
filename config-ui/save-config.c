@@ -28,6 +28,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef FREMANTLE
+#include <sys/wait.h>
+#endif
+
 #include "configfile.h"
 #include "config.h"
 
@@ -38,7 +42,7 @@ static void swb_config_output_option(FILE *fp, unsigned int *oldcfg_seen,
 			      struct swb_config *cfg, char *name) {
 	struct swb_config_option *opt;
 	ptrdiff_t i;
-	
+
 	for (opt = swb_config_options; opt->name; ++opt) {
 		if (strcmp(opt->name, name))
 			continue;
@@ -144,4 +148,49 @@ out:
 	if (fp)
 		fclose(fp);
 	return retval;
+}
+
+/* Reconfigure a running browser-switchboard process with new settings */
+void swb_reconfig(struct swb_config *old, struct swb_config *new) {
+#ifdef FREMANTLE
+	int microb_was_autostarted, microb_should_autostart;
+	pid_t pid;
+	int status;
+#endif
+
+	/* Try to send SIGHUP to any running browser-switchboard process
+	   This causes it to reread config files if in continuous_mode, or
+	   die so that the config will be reloaded on next start otherwise */
+	system("kill -HUP `pidof browser-switchboard` > /dev/null 2>&1");
+
+#ifdef FREMANTLE
+	if (!old || !new)
+		return;
+
+	microb_was_autostarted = (old->autostart_microb == 1) ||
+				 (!strcmp(old->default_browser, "microb") &&
+				  old->autostart_microb);
+	microb_should_autostart = (new->autostart_microb == 1) ||
+				  (!strcmp(new->default_browser, "microb") &&
+				   new->autostart_microb);
+	if (!microb_was_autostarted && microb_should_autostart) {
+		/* MicroB should be started if it's not running */
+		status = system("pidof browser > /dev/null");
+		if (WIFEXITED(status) && WEXITSTATUS(status)) {
+			if ((pid = fork()) == -1)
+				return;
+
+			if (!pid) {
+				/* Child process, start MicroB */
+				execl("/usr/bin/maemo-invoker", "browser",
+				      (char *)NULL);
+			}
+		}
+	}
+	/* XXX: We'd like to stop MicroB if (microb_was_autostarted &&
+	   !microb_should_autostart), but we don't know if the open MicroB
+	   process has open windows. */
+#endif /* FREMANTLE */
+
+	return;
 }

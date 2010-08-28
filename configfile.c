@@ -169,7 +169,7 @@ int parse_config_file_line(FILE *fp, struct swb_config_line *line) {
 	/* calloc() zeroes the memory, so string is automatically
 	   null terminated */
 
-	/* make key point to a null-terminated string holding the 
+	/* make key point to a null-terminated string holding the
 	   config key */
 	len = substrs[1].rm_eo - substrs[1].rm_so;
 	memmove(line->key, line->key+substrs[1].rm_so, len);

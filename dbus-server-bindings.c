@@ -147,9 +147,10 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 	GError *error = NULL;
 	guint result;
 
-	if (!ctx || !ctx->dbus_proxy)
+	if (!ctx || !ctx->dbus_proxy || !ctx->dbus_system_proxy)
 		return;
 
+	/* Acquire the com.nokia.osso_browser name on the session bus */
 	if (!dbus_g_proxy_call(ctx->dbus_proxy, "RequestName", &error,
 			       G_TYPE_STRING, "com.nokia.osso_browser",
 			       G_TYPE_UINT, DBUS_NAME_FLAG_REPLACE_EXISTING|DBUS_NAME_FLAG_DO_NOT_QUEUE,
@@ -159,9 +160,25 @@ void dbus_request_osso_browser_name(struct swb_context *ctx) {
 		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
 	}
-	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {	
+	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
 		log_msg("Couldn't acquire name com.nokia.osso_browser\n");
 		exit(1);
+	}
+
+	/* Try to acquire the com.nokia.osso_browser name on the system bus
+	   Treat a failure as non-fatal, which makes testing on desktop systems
+	   easier */
+	if (!dbus_g_proxy_call(ctx->dbus_system_proxy, "RequestName", &error,
+			       G_TYPE_STRING, "com.nokia.osso_browser",
+			       G_TYPE_UINT, DBUS_NAME_FLAG_REPLACE_EXISTING|DBUS_NAME_FLAG_DO_NOT_QUEUE,
+			       G_TYPE_INVALID,
+			       G_TYPE_UINT, &result,
+			       G_TYPE_INVALID)) {
+		log_msg("Couldn't acquire name com.nokia.osso_browser on system bus\n");
+		g_error_free(error);
+	}
+	if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+		log_msg("Couldn't acquire name com.nokia.osso_browser on system bus\n");
 	}
 }
 
@@ -170,10 +187,15 @@ void dbus_release_osso_browser_name(struct swb_context *ctx) {
 	GError *error = NULL;
 	guint result;
 
-	if (!ctx || !ctx->dbus_proxy)
+	if (!ctx || !ctx->dbus_proxy || !ctx->dbus_system_proxy)
 		return;
 
 	dbus_g_proxy_call(ctx->dbus_proxy, "ReleaseName", &error,
+			  G_TYPE_STRING, "com.nokia.osso_browser",
+			  G_TYPE_INVALID,
+			  G_TYPE_UINT, &result,
+			  G_TYPE_INVALID);
+	dbus_g_proxy_call(ctx->dbus_system_proxy, "ReleaseName", &error,
 			  G_TYPE_STRING, "com.nokia.osso_browser",
 			  G_TYPE_INVALID,
 			  G_TYPE_UINT, &result,

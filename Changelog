@@ -1,11 +1,23 @@
 version 3.3:
 * add support for Opera Mobile
+* only offer installed browsers in the config GUI
+* make continuous mode operation the default; disable non-continuous-mode on
+  Fremantle (needed for correct operation on D-Bus system bus)
+* Fremantle: major overhaul of MicroB launching to improve robustness; should
+  result in speed and behavior indistinguishable from when Browser Switchboard
+  isn't installed when MicroB is configured as default browser
 * fall back to the built-in default if the user's configured default browser
   isn't installed
+* listen on D-Bus system bus as well as session bus, to accommodate some broken
+  applications that send their requests on the system bus
+* Fremantle: start browser-switchboard on X session startup, and also prestart
+  MicroB if it's the default browser or the user asks for it
+* Fremantle: prestart MicroB when the user changes to MicroB as the default
+  browser
 * introduce a command-line config utility; this is mainly intended to give
   browser vendors a way to set their browser as the default
-* provide a description for users who don't know what MicroB is; thanks
-  Emanuele Cassioli for pointing out the need
+* config UI: provide a description for users who don't know what MicroB is;
+  thanks Emanuele Cassioli for pointing out the need
 * major rewrite of configuration loading/saving code
 
 version 3.2:

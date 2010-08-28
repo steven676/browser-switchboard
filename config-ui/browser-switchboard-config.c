@@ -29,6 +29,7 @@
 #include <getopt.h>
 
 #include "config.h"
+#include "save-config.h"
 #include "browsers.h"
 
 extern struct swb_config_option swb_config_options[];
@@ -103,15 +104,17 @@ static int get_default_browser(void) {
 }
 
 static int set_config_value(char *name, char *value) {
-	struct swb_config cfg;
+	struct swb_config orig_cfg, cfg;
 	struct swb_config_option *optinfo;
 	ptrdiff_t i;
 	int retval = 1;
 
-	swb_config_init(&cfg);
+	swb_config_init(&orig_cfg);
 
-	if (!swb_config_load(&cfg))
+	if (!swb_config_load(&orig_cfg))
 		return 1;
+
+	swb_config_copy(&cfg, &orig_cfg);
 
 	for (optinfo = swb_config_options; optinfo->name; ++optinfo) {
 		if (strcmp(name, optinfo->name))
@@ -157,12 +160,11 @@ static int set_config_value(char *name, char *value) {
 		if (!swb_config_save(&cfg))
 			retval = 1;
 
-	swb_config_free(&cfg);
+	/* Reconfigure a running browser-switchboard, if present */
+	swb_reconfig(&orig_cfg, &cfg);
 
-	/* Try to send SIGHUP to any running browser-switchboard process
-	   This causes it to reread config files if in continuous_mode, or
-	   die so that the config will be reloaded on next start otherwise */
-	system("kill -HUP `pidof browser-switchboard` > /dev/null 2>&1");
+	swb_config_free(&orig_cfg);
+	swb_config_free(&cfg);
 
 	return retval;
 }

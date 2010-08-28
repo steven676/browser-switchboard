@@ -58,6 +58,4 @@ void swb_config_free(struct swb_config *cfg);
 
 int swb_config_load(struct swb_config *cfg);
 
-int swb_config_save(struct swb_config *cfg);
-
 #endif /* _CONFIG_H */

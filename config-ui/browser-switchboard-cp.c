@@ -52,6 +52,7 @@
 #endif /* HILDON */
 
 #include "config.h"
+#include "save-config.h"
 #include "browsers.h"
 
 #define CONTINUOUS_MODE_DEFAULT 0
@@ -185,15 +186,9 @@ static void save_config(void) {
 	}
 
 	swb_config_save(&new_cfg);
-}
 
-static void do_reconfig(void) {
-	save_config();
-
-	/* Try to send SIGHUP to any running browser-switchboard process
-	   This causes it to reread config files if in continuous_mode, or
-	   die so that the config will be reloaded on next start otherwise */
-	system("kill -HUP `pidof browser-switchboard` > /dev/null 2>&1");
+	/* Reconfigure a running browser-switchboard, if present */
+	swb_reconfig(&orig_cfg, &new_cfg);
 }
 
 
@@ -422,7 +417,7 @@ osso_return_t execute(osso_context_t *osso,
 
 	response = gtk_dialog_run(dialog);
 	if (response == GTK_RESPONSE_OK)
-		do_reconfig();
+		save_config();
 
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 
@@ -451,7 +446,7 @@ int main(int argc, char *argv[]) {
 
 	response = gtk_dialog_run(dialog);
 	if (response == GTK_RESPONSE_OK)
-		do_reconfig();
+		save_config();
 
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 

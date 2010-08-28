@@ -1,9 +1,9 @@
 /*
- * browser-switchboard-config.c -- command-line configuration utility for 
+ * browser-switchboard-config.c -- command-line configuration utility for
  * Browser Switchboard
- * 
+ *
  * Copyright (C) 2009-2010 Steven Luo
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -25,9 +25,12 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <getopt.h>
 
 #include "config.h"
+#include "save-config.h"
+#include "browsers.h"
 
 extern struct swb_config_option swb_config_options[];
 
@@ -67,16 +70,51 @@ static int get_config_value(char *name) {
 	return retval;
 }
 
-static int set_config_value(char *name, char *value) {
+static int get_default_browser(void) {
 	struct swb_config cfg;
-	struct swb_config_option *optinfo;
-	ptrdiff_t i;
-	int retval = 1;
+	int i;
 
 	swb_config_init(&cfg);
 
 	if (!swb_config_load(&cfg))
 		return 1;
+
+	/* Check to see if the configured default browser is installed
+	   If not, report the default default browser */
+	for (i = 0; browsers[i].config; ++i) {
+		if (strcmp(browsers[i].config, cfg.default_browser))
+			continue;
+
+		if (browsers[i].binary && access(browsers[i].binary, X_OK))
+			printf("%s\n", browsers[0].config);
+		else
+			printf("%s\n", browsers[i].config);
+
+		break;
+	}
+
+	if (!browsers[i].config)
+		/* Unknown browser configured as default, report the default
+		   default browser */
+		printf("%s\n", browsers[0].config);
+
+	swb_config_free(&cfg);
+
+	return 0;
+}
+
+static int set_config_value(char *name, char *value) {
+	struct swb_config orig_cfg, cfg;
+	struct swb_config_option *optinfo;
+	ptrdiff_t i;
+	int retval = 1;
+
+	swb_config_init(&orig_cfg);
+
+	if (!swb_config_load(&orig_cfg))
+		return 1;
+
+	swb_config_copy(&cfg, &orig_cfg);
 
 	for (optinfo = swb_config_options; optinfo->name; ++optinfo) {
 		if (strcmp(name, optinfo->name))
@@ -85,10 +123,6 @@ static int set_config_value(char *name, char *value) {
 		i = optinfo - swb_config_options;
 		switch (optinfo->type) {
 		  case SWB_CONFIG_OPT_STRING:
-			/* Free any existing string */
-			if (cfg.flags & optinfo->set_mask)
-				free(*(char **)cfg.entries[i]);
-
 			if (strlen(value) == 0) {
 				/* If the new value is empty, clear the config
 				   setting */
@@ -122,12 +156,15 @@ static int set_config_value(char *name, char *value) {
 		if (!swb_config_save(&cfg))
 			retval = 1;
 
-	swb_config_free(&cfg);
+	/* Reconfigure a running browser-switchboard, if present */
+	swb_reconfig(&orig_cfg, &cfg);
 
-	/* Try to send SIGHUP to any running browser-switchboard process
-	   This causes it to reread config files if in continuous_mode, or
-	   die so that the config will be reloaded on next start otherwise */
-	system("kill -HUP `pidof browser-switchboard` > /dev/null 2>&1");
+	swb_config_free(&orig_cfg);
+	/* XXX can't free all of cfg, it contains pointers to memory we just
+	   freed above
+	swb_config_free(&cfg); */
+	if (optinfo->name && optinfo->type == SWB_CONFIG_OPT_STRING)
+		free(*(char **)cfg.entries[i]);
 
 	return retval;
 }
@@ -148,7 +185,7 @@ int main(int argc, char **argv) {
 	int opt, done = 0;
 	int set = 0;
 	char *selected_opt = NULL;
-	
+
 	while (!done && (opt = getopt(argc, argv, "hsbcmo:")) != -1) {
 		switch (opt) {
 		  case 'h':
@@ -194,6 +231,9 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		return set_config_value(selected_opt, argv[optind]);
-	} else
+	} else if (!strcmp(selected_opt, "default_browser"))
+		/* Default browser value needs special handling */
+		return get_default_browser();
+	else
 		return get_config_value(selected_opt);
 }

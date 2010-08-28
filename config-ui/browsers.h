@@ -1,8 +1,7 @@
 /*
- * browser-switchboard.h -- definitions common to all of browser-switchboard
+ * browsers.h -- the list of known browsers
  *
- * Copyright (C) 2009 Steven Luo
- * Derived from a Python implementation by Jason Simpson and Steven Luo
+ * Copyright (C) 2010 Steven Luo
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,20 +19,23 @@
  * USA.
  */
 
-#ifndef _BROWSER_SWITCHBOARD_H
-#define _BROWSER_SWITCHBOARD_H 1
+#ifndef _BROWSERS_H
+#define _BROWSERS_H 1
 
-struct swb_context {
-	int continuous_mode;
-	void (*default_browser_launcher)(struct swb_context *, char *);
-	char *other_browser_cmd;
-#ifdef FREMANTLE
-	int autostart_microb;
-#endif
-	DBusGConnection *session_bus;
-	DBusGProxy *dbus_proxy;
-	DBusGConnection *system_bus;
-	DBusGProxy *dbus_system_proxy;
+struct browser_entry {
+	char *config;
+	char *displayname;
+	char *binary;
 };
 
-#endif /* _BROWSER_SWITCHBOARD_H */
+struct browser_entry browsers[] = {
+	{ "microb", "MicroB (stock browser)", NULL }, /* First entry is the default! */
+	{ "tear", "Tear", "/usr/bin/tear" },
+	{ "fennec", "Firefox Mobile", "/usr/bin/fennec" },
+	{ "opera", "Opera Mobile", "/usr/bin/opera" },
+	{ "midori", "Midori", "/usr/bin/midori" },
+	{ "other", "Other", NULL },
+	{ NULL, NULL, NULL },
+};
+
+#endif /* _BROWSERS_H */

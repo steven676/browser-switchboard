@@ -28,12 +28,15 @@ all:
 	@echo '    make util -- build command-line configuration utility'
 	@echo '    make diablo-hildon-app -- build standalone Diablo Hildon application'
 	@echo '    make diablo-plugin -- build Diablo hildon-control-panel plugin'
+	@echo '    make fremantle-util -- build command-line configuration utility for Fremantle'
 	@echo '    make fremantle-hildon-app -- build standalone Fremantle Hildon application'
 	@echo '    make fremantle-plugin -- build Fremantle hildon-control-panel plugin'
 app: $(APP)
 util: $(UTIL)
 diablo-hildon-app: $(HILDON_APP)
 diablo-plugin: $(PLUGIN)
+fremantle-util:
+	@$(MAKE) EXTRA_CPPFLAGS='-DFREMANTLE $(EXTRA_CPPFLAGS)' $(UTIL)
 fremantle-hildon-app:
 	@$(MAKE) EXTRA_CPPFLAGS='-DFREMANTLE $(EXTRA_CPPFLAGS)' $(HILDON_APP)
 fremantle-plugin:
@@ -58,7 +61,7 @@ $(HILDON_APP): $(happ_obj)
 $(PLUGIN): $(plugin_obj)
 	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) -o $(PLUGIN) $(plugin_obj) \
 		$(LDFLAGS) $(LDFLAGS_PLUGIN)
-		
+
 
 %.plugin.o: %.c
 	$(CC) $(CFLAGS) $(CFLAGS_PLUGIN) $(CPPFLAGS) $(CPPFLAGS_PLUGIN) \

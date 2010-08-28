@@ -28,17 +28,19 @@
 #define SWB_CONFIG_DEFAULT_BROWSER_SET		0x04
 #define SWB_CONFIG_OTHER_BROWSER_CMD_SET	0x08
 #define SWB_CONFIG_LOGGING_SET			0x10
+#define SWB_CONFIG_AUTOSTART_MICROB_SET		0x20
 
 struct swb_config {
 	unsigned int flags;
 	/* Array of pointers to the elements of the struct, in the order given
 	   in swb_config_options[] */
-	void *entries[4];
+	void *entries[5];
 
 	int continuous_mode;
 	char *default_browser;
 	char *other_browser_cmd;
 	char *logging;
+	int autostart_microb;
 };
 
 struct swb_config_option {
@@ -55,7 +57,5 @@ void swb_config_init(struct swb_config *cfg);
 void swb_config_free(struct swb_config *cfg);
 
 int swb_config_load(struct swb_config *cfg);
-
-int swb_config_save(struct swb_config *cfg);
 
 #endif /* _CONFIG_H */

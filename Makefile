@@ -38,7 +38,11 @@ install: $(APP)
 	install -c -m 0755 microb $(DESTDIR)$(PREFIX)/bin
 	install -c -m 0644 microb.desktop $(DESTDIR)$(PREFIX)/share/applications/hildon
 
+install-xsession-script:
+	mkdir -p $(DESTDIR)/etc/X11/Xsession.post
+	install -c -m 0755 xsession-post.sh $(DESTDIR)/etc/X11/Xsession.post/35browser-switchboard
+
 clean:
 	rm -f $(APP) $(obj) dbus-server-glue.h
 
-.PHONY: strip install diablo fremantle
+.PHONY: strip install install-xsession-script diablo fremantle

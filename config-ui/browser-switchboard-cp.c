@@ -1,14 +1,14 @@
 /*
  * browser-switchboard-cp.c -- a hildon-control-panel applet for
  * selecting the default browser for Browser Switchboard
- * 
+ *
  * Copyright (C) 2009-2010 Steven Luo
  * Copyright (C) 2009-2010 Faheem Pervez
- * 
+ *
  * Derived from services-cp.c from maemo-control-services
  * Copyright (c) 2008 Janne Kataja <janne.kataja@iki.fi>
  * Copyright (c) 2008 Nokia Corporation
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -52,6 +52,8 @@
 #endif /* HILDON */
 
 #include "config.h"
+#include "save-config.h"
+#include "browsers.h"
 
 #define CONTINUOUS_MODE_DEFAULT 0
 
@@ -59,25 +61,10 @@
 #define _HILDON_SIZE_DEFAULT (HILDON_SIZE_AUTO_WIDTH|HILDON_SIZE_FINGER_HEIGHT)
 #endif
 
-struct browser_entry {
-	char *config;
-	char *displayname;
-};
-struct browser_entry browsers[] = {
-	{ "microb", "MicroB (stock browser)" }, /* First entry is the default! */
-	{ "tear", "Tear" },
-	{ "fennec", "Mobile Firefox (Fennec)" },
-	{ "opera", "Opera Mobile" },
-	{ "midori", "Midori" },
-	{ "other", "Other" },
-	{ NULL, NULL },
-};
-
 struct swb_config orig_cfg;
 
 struct config_widgets {
 #if defined(HILDON) && defined(FREMANTLE)
-	GtkWidget *continuous_mode_selector;
 	GtkWidget *default_browser_selector;
 #else
 	GtkWidget *continuous_mode_off_radio;
@@ -91,21 +78,29 @@ struct config_widgets cw;
 GtkWidget *dialog;
 
 
+struct browser_entry *installed_browsers;
+void init_installed_browsers(void) {
+	struct browser_entry *cur = browsers;
+	unsigned int count = 0;
+
+	installed_browsers = calloc(sizeof browsers, 1);
+	if (!installed_browsers)
+		exit(1);
+
+	count = 0;
+	for (; cur->config; ++cur)
+		if (!cur->binary || !access(cur->binary, X_OK))
+			installed_browsers[count++] = *cur;
+}
+
 /**********************************************************************
  * Configuration routines
  **********************************************************************/
 
 #if defined(HILDON) && defined(FREMANTLE)
 
-static inline int get_continuous_mode(void) {
-	return hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), 0);
-}
-static inline void set_continuous_mode(int state) {
-	hildon_touch_selector_set_active(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), 0, state);
-}
-
 static inline char *get_default_browser(void) {
-	return browsers[hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0)].config;
+	return installed_browsers[hildon_touch_selector_get_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0)].config;
 }
 
 #else /* !defined(HILDON) || !defined(FREMANTLE) */
@@ -121,7 +116,7 @@ static inline void set_continuous_mode(int state) {
 }
 
 static inline char *get_default_browser(void) {
-	return browsers[gtk_combo_box_get_active(GTK_COMBO_BOX(cw.default_browser_combo))].config;
+	return installed_browsers[gtk_combo_box_get_active(GTK_COMBO_BOX(cw.default_browser_combo))].config;
 }
 
 #endif /* defined(HILDON) && defined(FREMANTLE) */
@@ -130,10 +125,11 @@ static void set_default_browser(char *browser) {
 	gint i;
 
 	/* Loop through browsers looking for a match */
-	for (i = 0; browsers[i].config && strcmp(browsers[i].config, browser);
-			++i);
+	for (i = 0;
+	     installed_browsers[i].config && strcmp(installed_browsers[i].config, browser);
+	     ++i);
 
-	if (!browsers[i].config)
+	if (!installed_browsers[i].config)
 		/* No match found, set to the default browser */
 		i = 0;
 
@@ -153,10 +149,12 @@ static inline void set_other_browser_cmd(char *cmd) {
 
 static void load_config(void) {
 	swb_config_init(&orig_cfg);
-	
+
 	swb_config_load(&orig_cfg);
 
+#ifndef FREMANTLE
 	set_continuous_mode(orig_cfg.continuous_mode);
+#endif
 	set_default_browser(orig_cfg.default_browser);
 	if (orig_cfg.other_browser_cmd)
 		set_other_browser_cmd(orig_cfg.other_browser_cmd);
@@ -167,10 +165,12 @@ static void save_config(void) {
 
 	swb_config_copy(&new_cfg, &orig_cfg);
 
+#ifndef FREMANTLE
 	if (get_continuous_mode() != orig_cfg.continuous_mode) {
 		new_cfg.continuous_mode = get_continuous_mode();
 		new_cfg.flags |= SWB_CONFIG_CONTINUOUS_MODE_SET;
 	}
+#endif
 	if (strcmp(get_default_browser(), orig_cfg.default_browser)) {
 		new_cfg.default_browser = get_default_browser();
 		new_cfg.flags |= SWB_CONFIG_DEFAULT_BROWSER_SET;
@@ -186,15 +186,9 @@ static void save_config(void) {
 	}
 
 	swb_config_save(&new_cfg);
-}
 
-static void do_reconfig(void) {
-	save_config();
-
-	/* Try to send SIGHUP to any running browser-switchboard process
-	   This causes it to reread config files if in continuous_mode, or
-	   die so that the config will be reloaded on next start otherwise */
-	system("kill -HUP `pidof browser-switchboard` > /dev/null 2>&1");
+	/* Reconfigure a running browser-switchboard, if present */
+	swb_reconfig(&orig_cfg, &new_cfg);
 }
 
 
@@ -232,7 +226,6 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	GtkWidget *dialog_vbox;
 
 	GtkWidget *default_browser_selector_button;
-	GtkWidget *continuous_mode_selector_button;
 	int i;
 	HildonGtkInputMode input_mode;
 
@@ -249,9 +242,10 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	dialog_vbox = GTK_DIALOG(dialog)->vbox;
 
 	/* Config options */
+	init_installed_browsers();
 	cw.default_browser_selector = hildon_touch_selector_new_text();
-	for (i = 0; browsers[i].config; ++i)
-		hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), browsers[i].displayname);
+	for (i = 0; installed_browsers[i].config; ++i)
+		hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), installed_browsers[i].displayname);
 	hildon_touch_selector_set_active(HILDON_TOUCH_SELECTOR(cw.default_browser_selector), 0, 0);
 	default_browser_selector_button = hildon_picker_button_new(_HILDON_SIZE_DEFAULT, HILDON_BUTTON_ARRANGEMENT_HORIZONTAL);
 	hildon_button_set_title(HILDON_BUTTON(default_browser_selector_button),
@@ -280,20 +274,6 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	hildon_gtk_widget_set_theme_size(cw.other_browser_cmd_entry_label, _HILDON_SIZE_DEFAULT);
 	gtk_box_pack_start(GTK_BOX(dialog_vbox),
 			   cw.other_browser_cmd_entry_label, FALSE, FALSE, 0);
-
-	cw.continuous_mode_selector = hildon_touch_selector_new_text();
-	hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), "Lower memory usage");
-	hildon_touch_selector_append_text(HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector), "Faster browser startup time");
-
-	continuous_mode_selector_button = hildon_picker_button_new(_HILDON_SIZE_DEFAULT, HILDON_BUTTON_ARRANGEMENT_VERTICAL);
-	hildon_button_set_title(HILDON_BUTTON(continuous_mode_selector_button),
-				"Optimize Browser Switchboard for:");
-	hildon_picker_button_set_selector(HILDON_PICKER_BUTTON(continuous_mode_selector_button), HILDON_TOUCH_SELECTOR(cw.continuous_mode_selector));
-	hildon_button_set_alignment(HILDON_BUTTON(continuous_mode_selector_button),
-				    0, 0, 0, 0);
-	set_continuous_mode(CONTINUOUS_MODE_DEFAULT);
-	gtk_box_pack_start(GTK_BOX(dialog_vbox),
-			   continuous_mode_selector_button, FALSE, FALSE, 0);
 
 	gtk_widget_show_all(dialog);
 	return GTK_DIALOG(dialog);
@@ -331,10 +311,11 @@ static GtkDialog *swb_config_dialog(gpointer cp_window) {
 	gtk_table_set_row_spacings(GTK_TABLE(options_table), 5);
 	gtk_box_pack_start(GTK_BOX(dialog_vbox), options_table, FALSE, FALSE, 0);
 
+	init_installed_browsers();
 	cw.default_browser_combo = gtk_combo_box_new_text();
-	for (i = 0; browsers[i].config; ++i)
+	for (i = 0; installed_browsers[i].config; ++i)
 		gtk_combo_box_append_text(GTK_COMBO_BOX(cw.default_browser_combo),
-					  browsers[i].displayname);
+					  installed_browsers[i].displayname);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cw.default_browser_combo), 0);
 	default_browser_combo_label = gtk_label_new("Default browser:");
 	gtk_misc_set_alignment(GTK_MISC(default_browser_combo_label), 1, 0.5);
@@ -436,7 +417,7 @@ osso_return_t execute(osso_context_t *osso,
 
 	response = gtk_dialog_run(dialog);
 	if (response == GTK_RESPONSE_OK)
-		do_reconfig();
+		save_config();
 
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 
@@ -465,7 +446,7 @@ int main(int argc, char *argv[]) {
 
 	response = gtk_dialog_run(dialog);
 	if (response == GTK_RESPONSE_OK)
-		do_reconfig();
+		save_config();
 
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 

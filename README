@@ -1,5 +1,5 @@
 BROWSER SWITCHBOARD
-version 3.3b1
+version 3.3b2
 
 Browser Switchboard is a program which allows you to choose which
 browser to use as the default browser. It supports MicroB, Tear,
@@ -15,9 +15,7 @@ page on garage.maemo.org: https://garage.maemo.org/frs/?group_id=1159
 Quick Start:
 1. Download the binary package: browser-switchboard_X.Y-Z_all.deb
 (where X.Y-Z is the version number, of course).
-2. If you're using a Maemo 5 device, make sure all your MicroB browser
-windows are closed.
-3. Install the package using the Application Manager (open the
+2. Install the package using the Application Manager (open the
 Application Manager, then select Application->Install from file in the
 menu).
 
@@ -52,9 +50,9 @@ $ cat > $HOME/.config/browser-switchboard <<EOF
 default_browser = "your_browser"
 EOF
 
-where your_browser can be one of "tear", "microb", "fennec", "midori",
-or "other" (see below for more on the "other" option).  You can of
-course also edit the $HOME/.config/browser-switchboard file with your
+where your_browser can be one of "tear", "microb", "fennec", "opera",
+"midori" or "other" (see below for more on the "other" option).  You can
+of course also edit the $HOME/.config/browser-switchboard file with your
 favorite text editor.
 
 To restore the default behavior, just delete the config file:
@@ -69,15 +67,22 @@ Here's a more complete sample configuration file:
 # BEGIN SAMPLE CONFIG FILE
 # This is a comment
 # continuous_mode: 0 -- close after handling a request; 1 -- run
-# continuously in the background
-continuous_mode = 0
-# default_browser: "tear", "microb", "fennec", "midori", or "other"
+# continuously in the background (default)
+# On Fremantle, this is forced to 1 regardless of config setting
+continuous_mode = 1
+# default_browser: "tear", "microb", "fennec", "midori", "opera" or
+# "other"
 default_browser = "tear"
 # other_browser_cmd: If default browser is "other", what program
 # to run (%s will be replaced by URI)
 #other_browser_cmd = "some_browser %s"
 # logging: Where log output should go: "stdout", "syslog", "none"
 #logging = "stdout"
+# autostart_microb: Fremantle only: whether MicroB should be
+# prestarted in the background: 0 -- never prestart MicroB; 1 -- always
+# prestart MicroB; -1 -- only prestart MicroB when MicroB is the default
+# browser (default behavior if unset)
+#autostart_microb = 0
 # END SAMPLE CONFIG FILE
 
 Lines beginning with # characters are comments and are ignored by the
@@ -87,15 +92,17 @@ in the configuration UI.]
 In continuous mode, Browser Switchboard keeps running in the background
 instead of closing after handling each request.  This saves a bit of
 startup time for each link (on my N800 running Diablo), but costs you
-about 100 KB extra memory.  Continuous mode is disabled by default; set
-continuous_mode to 1 to enable.  [This option corresponds to the
-"Optimize Browser Switchboard for" option group in the UI; "Lower memory
-usage" corresponds to continuous_mode off, while "Faster browser startup
-time" corresponds to continuous_mode on.]
+about 100 KB extra memory.  Continuous mode is enabled by default; set
+continuous_mode to 0 to enable.  On Fremantle, continuous mode is always
+enabled regardless of the value of this config setting, to provide
+better compatibility with MicroB's behavior.  [This option corresponds
+to the "Optimize Browser Switchboard for" option group in the UI; "Lower
+memory usage" corresponds to continuous_mode off, while "Faster browser
+startup time" corresponds to continuous_mode on.]
 
-The "tear", "microb", "fennec", and "midori" options for default_browser
-should be self-explanatory.  [These correspond to the options in the
-"Default browser" combo box in the UI.]
+The "tear", "microb", "fennec", "opera" and "midori" options for
+default_browser should be self-explanatory.  [These correspond to the
+options in the "Default browser" combo box in the UI.]
 
 If the default browser is "other", Browser Switchboard will run the
 program specified in other_browser_cmd as the default browser, with a
@@ -117,6 +124,51 @@ default option is "stdout", which means you won't see output unless you
 run Browser Switchboard from the shell.  "syslog" will send the output
 to the system log (assuming you have a syslogd set up on your device),
 and "none" disables debug logging entirely.
+
+On Fremantle only, autostart_microb controls whether MicroB is
+prestarted when the device boots and whether the MicroB browser process
+is left running when no browser windows are open.  By default, MicroB is
+prestarted (and the process left open when no browser windows are open)
+only when MicroB is set as the default browser; you can force MicroB to
+always prestart by setting autostart_microb = 1, while you can force it
+to never prestart by setting autostart_microb = 0.  [This option has no
+corresponding UI at the moment.]
+
+
+The browser-switchboard-config Command-Line Configuration Tool:
+
+A command-line configuration utility is provided to allow programs and
+scripts to query and set Browser Switchboard configuration variables.
+For example,
+
+$ browser-switchboard-config -b
+
+will display the default browser, and 
+
+$ browser-switchboard-config -s -b "opera"
+
+will set the default browser to Opera Mobile.  See the help output from
+running browser-switchboard-config with no arguments for more
+information.
+
+The primary purpose of this tool is to allow browser vendors to provide
+an option in their browsers to set themselves as the default browser,
+via something like this (shell-like pseudocode):
+
+if [ -x /usr/bin/browser-switchboard-config ]; then
+	if [ `browser-switchboard-config -b` = "mybrowser" ]; then
+		display "MyBrowser is the default browser."
+	else
+		button "Make MyBrowser the default browser"
+		action "browser-switchboard-config -s -b mybrowser"
+	fi
+else
+	display "Install Browser Switchboard to make MyBrowser the default browser"
+fi
+
+Browser vendors: setting yourself as the default browser without
+prompting the user first (via package maintainer scripts, for example)
+is strongly discouraged.
 
 
 Browser Switchboard and MicroB's browserd:

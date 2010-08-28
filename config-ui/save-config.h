@@ -1,7 +1,7 @@
 /*
- * browser-switchboard.h -- definitions common to all of browser-switchboard
+ * save-config.h -- definitions for saving Browser Switchboard configuration
  *
- * Copyright (C) 2009 Steven Luo
+ * Copyright (C) 2009-2010 Steven Luo
  * Derived from a Python implementation by Jason Simpson and Steven Luo
  *
  * This program is free software; you can redistribute it and/or
@@ -20,20 +20,12 @@
  * USA.
  */
 
-#ifndef _BROWSER_SWITCHBOARD_H
-#define _BROWSER_SWITCHBOARD_H 1
+#ifndef _SAVE_CONFIG_H
+#define _SAVE_CONFIG_H
 
-struct swb_context {
-	int continuous_mode;
-	void (*default_browser_launcher)(struct swb_context *, char *);
-	char *other_browser_cmd;
-#ifdef FREMANTLE
-	int autostart_microb;
-#endif
-	DBusGConnection *session_bus;
-	DBusGProxy *dbus_proxy;
-	DBusGConnection *system_bus;
-	DBusGProxy *dbus_system_proxy;
-};
+#include "config.h"
 
-#endif /* _BROWSER_SWITCHBOARD_H */
+int swb_config_save(struct swb_config *cfg);
+void swb_reconfig(struct swb_config *old, struct swb_config *new);
+
+#endif /* _SAVE_CONFIG_H */

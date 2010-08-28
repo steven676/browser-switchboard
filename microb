@@ -1,5 +1,15 @@
 #!/bin/sh
 
+get_name_owner() {
+	output=$(dbus-send --session --type=method_call --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.GetNameOwner string:"$1" 2>/dev/null)
+	RETVAL=$?
+	if [ $RETVAL -ne 0 ]; then
+		return $RETVAL
+	fi
+	echo "$output" | tail -1
+	return 0
+}
+
 case "$1" in
 	--url=* )
 		url="${1#--url=}"
@@ -9,10 +19,24 @@ case "$1" in
 		;;
 esac
 
-if pidof browser > /dev/null 2>&1; then
-	method=open_new_window
-else
+# Check whether Browser Switchboard owns the com.nokia.osso_browser name or not
+osso_browser_owner=$(get_name_owner com.nokia.osso_browser)
+if [ $? -ne 0 ]; then
+	# No one owns com.nokia.osso_browser -- let D-Bus start
+	# browser-switchboard to handle this request
 	method=switchboard_launch_microb
+else
+	# If com.nokia.osso_browser is owned by the owner of
+	# org.maemo.garage.browser-switchboard, then Browser Switchboard must
+	# be the owner
+	browser_switchboard_owner=$(get_name_owner org.maemo.garage.browser-switchboard)
+	if [ "$osso_browser_owner" = "$browser_switchboard_owner" ]; then
+		# Browser Switchboard owns com.nokia.osso_browser
+		method=switchboard_launch_microb
+	else
+		# Assume MicroB owns com.nokia.osso_browser
+		method=open_new_window
+	fi
 fi
 
 dbus-send --session --type=method_call --print-reply --dest="com.nokia.osso_browser" /com/nokia/osso_browser/request com.nokia.osso_browser.$method string:${url:-"new_window"} > /dev/null 2>&1

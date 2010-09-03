@@ -15,22 +15,26 @@
 <img src="cp-screenshot-fremantle.jpg" width="350" alt="Browser Switchboard control panel screenshot on Fremantle">
 </p>
 
-<p>Browser Switchboard (formerly browser-proxy) is a program which allows
-you to choose which browser to use as the default browser on Maemo devices.
-It supports MicroB, Tear, Mobile Firefox, Opera Mobile, and Midori out of the box,
-and can also be used to launch MicroB without having browserd running.</p>
+<p>Browser Switchboard is a program which allows you to choose which
+browser to use as the default browser. It supports MicroB, Tear,
+Mobile Firefox, Opera Mobile, and Midori out of the box, and can also be
+used to launch MicroB without having browserd running.  A Control Panel
+applet to choose the default browser is provided.</p>
 
 <h2>Current Release</h2>
-<p>Version 3.2-2 (2010/05/28) (<a href="browser-switchboard.install">Diablo one-click install</a>, <a href="https://garage.maemo.org/frs/download.php/8174/browser-switchboard_3.2-2fremantle1_armel.deb">Beta-quality Fremantle package</a>)</p>
+<p>Version 3.3 (2010/09/02) (<a href="browser-switchboard.install">Diablo one-click install</a>, <a href="https://garage.maemo.org/frs/download.php/8765/browser-switchboard_3.3-1fremantle1_armel.deb">Beta-quality Fremantle package</a>)</p>
 <ul>
-<li>Make the "Web" menu entry and /usr/bin/browser script open the selected default browser, and provide a new "MicroB" menu entry and /usr/bin/microb script for launching MicroB.</li>
-<li>[Fremantle] Launching and closing MicroB now works! Many thanks to everyone who tested this and provided feedback, especially Faheem Pervez and Uwe Kaminski.</li>
-<li>Add support for Opera Mobile.</li>
-<li>[Fremantle] Restarting the device after a fresh install of Browser Switchboard should no longer be necessary. Make sure you close any open MicroB browser windows before installing/upgrading, though! (Restarting after installation has never been required on Diablo.)</li>
-<li>[Fremantle] Force the Ovi Store bookmark to open in MicroB, since Ovi Store doesn't load in other browsers. Thanks to ToJa92 of the talk.maemo.org forums for reporting this.</li>
-<li>Add the ability to send debug logging output to syslog as well as the terminal, and add a config setting "logging={stdout,syslog,none}" to configure it. Thanks to Faheem Pervez for the suggestion.</li>
-<li>Turn on additional optimizations for code size, which should reduce disk and memory footprint slightly, and also possibly improve startup time.</li>
-<li>Miscellaneous minor bugfixes and cleanups.</li>
+<li>In the Control Panel applet, only offer browsers that are actually installed.</li>
+<li>Fall back to MicroB instead of silently failing if the configured default browser is not installed.</li>
+<li>[Fremantle] An overhaul of the MicroB launching process, which should greatly increase the robustness of Browser Switchboard with MicroB on Fremantle.  When MicroB is selected as the default browser, the user experience should be identical to that when Browser Switchboard isn't installed; MicroB will still behave differently when another browser is selected as the default (see the known issues for details).</li>
+<li>Listen on the D-Bus system bus as well as the session bus, to accommodate applications (like some versions of Hermes and witter) which send link opening requests on the system bus.  (Application developers: the system bus isn't for user programs, you should be using the session bus.)</li>
+<li>[Diablo] Continuous mode is now the default mode of operation.</li>
+<li>[Fremantle] Continuous mode is now forced on regardless of the setting of the config preference; this change is required to make sure applications can find us on the system bus.</li>
+<li>[Fremantle] Browser Switchboard is now started on startup; this change is required to make sure applications can find us on the system bus.</li>
+<li>[Fremantle] By default, MicroB is now prestarted on startup, and remains in memory even when no browser windows are open, if MicroB is the default browser.  This behavior can be configured via a new autostart_microb preference.</li>
+<li>Update the package description to mention that there's a control panel applet in the package, to help out users who don't read documentation (and therefore won't find this thread).  Thanks to Emanuele Cassioli for the suggestion.</li>
+<li>Rename the MicroB option in the control panel to "MicroB (stock browser)", as some have pointed out that the MicroB name isn't used anywhere and is therefore not familiar to many users.  Better wording suggestions are welcome.</li>
+<li>Provide a command-line tool for configuring Browser Switchboard which can be used by browser developers to set their browser as the default.  See the <a href="http://git.maemo.org/git/browser-switch/?p=browser-switch;a=commit;h=6ac42ed781a7735221de8aaa28a6647b32608049">commit message</a> for more information.  This interface isn't set in stone, so if you have comments, please let me know.</li>
 </ul>
 
 <h2>Getting Browser Switchboard</h2>
@@ -61,8 +65,6 @@ your device and follow the instructions to install Browser Switchboard.</p>
 <ol>
 <li>Download the binary package: browser-switchboard_X.Y-Z_all.deb
 (where X.Y-Z is the version number, of course).</li>
-<li>(Maemo 5 only) Make sure that all your MicroB windows are closed &mdash;
-the installation/upgrade process will cause MicroB to exit.</li>
 <li>Install the package using the Application Manager.</li>
 </ol>
 

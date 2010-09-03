@@ -1,10 +1,11 @@
 BROWSER SWITCHBOARD
-version 3.3b2
+version 3.3
 
 Browser Switchboard is a program which allows you to choose which
 browser to use as the default browser. It supports MicroB, Tear,
 Fennec/Mobile Firefox, and Midori out of the box, and can also be used
-to launch MicroB without having browserd running.
+to launch MicroB without having browserd running.  A Control Panel
+applet to choose the default browser is provided.
 
 
 Download:
@@ -92,7 +93,7 @@ in the configuration UI.]
 In continuous mode, Browser Switchboard keeps running in the background
 instead of closing after handling each request.  This saves a bit of
 startup time for each link (on my N800 running Diablo), but costs you
-about 100 KB extra memory.  Continuous mode is enabled by default; set
+about 150 KB extra memory.  Continuous mode is enabled by default; set
 continuous_mode to 0 to enable.  On Fremantle, continuous mode is always
 enabled regardless of the value of this config setting, to provide
 better compatibility with MicroB's behavior.  [This option corresponds
@@ -207,10 +208,11 @@ SDK$ cd browser-switchboard-X.Y
 4. Compile:
 
 SDK$ make diablo
-SDK$ make -C config-ui diablo-plugin
+SDK$ make -C config-ui diablo-plugin util
 
-(Replace "diablo" with "fremantle" and "diablo-plugin" with
-"fremantle-plugin" if compiling for Fremantle.
+(Replace "diablo" with "fremantle", "diablo-plugin" with
+"fremantle-plugin" and "util" with "fremantle-util" if compiling for
+Fremantle.
 
 If you want the standalone config application instead of the Control
 Panel plugin, do 
@@ -224,9 +226,13 @@ etc. as usual.)
 5. Install to a temporary directory, and tar up the result:
 
 SDK$ make DESTDIR=temp install
-SDK$ make -C config-ui install
+SDK$ make DESTDIR=temp -C config-ui install
 SDK$ cd temp
 SDK$ tar cf stuff.tar .
+
+(On Fremantle, add a
+SDK$ make DESTDIR=temp install-xsession-script
+before creating the tarball.)
 
 6. As root on your device, move files that will be replaced in the
 install process out of the way:

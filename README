@@ -3,8 +3,8 @@ version 3.3
 
 Browser Switchboard is a program which allows you to choose which
 browser to use as the default browser. It supports MicroB, Tear,
-Fennec/Mobile Firefox, and Midori out of the box, and can also be used
-to launch MicroB without having browserd running.  A Control Panel
+Mobile Firefox, Opera Mobile, and Midori out of the box, and can also be
+used to launch MicroB without having browserd running.  A Control Panel
 applet to choose the default browser is provided.
 
 

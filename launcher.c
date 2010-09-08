@@ -321,7 +321,7 @@ int launch_microb_open_window(struct swb_context *ctx, char *uri,
 			uri = "about:blank";
 		}
 	}
-	if (!dbus_g_proxy_call(g_proxy, "load_url",
+	if (!dbus_g_proxy_call(g_proxy, "open_new_window",
 			       &gerror,
 			       G_TYPE_STRING, uri,
 			       G_TYPE_INVALID,

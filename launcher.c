@@ -288,16 +288,18 @@ pid_t launch_microb_start_browser_process(DBusConnection *conn, int fd) {
 
 int launch_microb_open_window(struct swb_context *ctx, char *uri,
 			      int flags) {
-	DBusGProxy *g_proxy;
+	static DBusGProxy *g_proxy = NULL;
 	GError *gerror = NULL;
 
-	g_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
-			"com.nokia.osso_browser",
-			"/com/nokia/osso_browser/request",
-			"com.nokia.osso_browser");
 	if (!g_proxy) {
-		log_msg("Couldn't get a com.nokia.osso_browser proxy\n");
-		return 0;
+		g_proxy = dbus_g_proxy_new_for_name(ctx->session_bus,
+				"com.nokia.osso_browser",
+				"/com/nokia/osso_browser/request",
+				"com.nokia.osso_browser");
+		if (!g_proxy) {
+			log_msg("Couldn't get a com.nokia.osso_browser proxy\n");
+			return 0;
+		}
 	}
 
 	if (!strcmp(uri, "new_window")) {
@@ -331,7 +333,6 @@ int launch_microb_open_window(struct swb_context *ctx, char *uri,
 		return 0;
 	}
 
-	g_object_unref(g_proxy);
 	return 1;
 }
 

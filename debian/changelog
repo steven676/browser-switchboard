@@ -1,3 +1,13 @@
+browser-switchboard (3.3-1fremantle2) extras-devel; urgency=low
+
+  * Beta release for Fremantle.
+  * Cherry-pick 330acaf7... ("Fremantle: Use open_new_window instead of
+    load_url when passing URL to MicroB"); fixes regression from 3.2.
+  * Cherry-pick efb6ed35... ("Fremantle: Make DBusGProxy static in
+    launch_microb_open_window()").
+
+ -- Steven Luo <steven+maemo@steven676.net>  Fri, 10 Sep 2010 17:34:20 -0700
+
 browser-switchboard (3.3-1fremantle1) extras-devel; urgency=low
 
   * Beta release for Fremantle.

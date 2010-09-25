@@ -107,6 +107,15 @@ gboolean osso_browser_load_url(OssoBrowser *obj,
 	return TRUE;
 }
 
+gboolean osso_browser_load_url_sb(OssoBrowser *obj,
+		const char *uri, gboolean fullscreen, GError **error) {
+	/* XXX don't ignore fullscreen requests */
+	if (!ctx.continuous_mode)
+		ignore_reconfig_requests();
+	open_address(uri);
+	return TRUE;
+}
+
 gboolean osso_browser_mime_open(OssoBrowser *obj,
 		const char *uri, GError **error) {
 	if (!ctx.continuous_mode)
@@ -117,6 +126,15 @@ gboolean osso_browser_mime_open(OssoBrowser *obj,
 
 gboolean osso_browser_open_new_window(OssoBrowser *obj,
 		const char *uri, GError **error) {
+	if (!ctx.continuous_mode)
+		ignore_reconfig_requests();
+	open_address(uri);
+	return TRUE;
+}
+
+gboolean osso_browser_open_new_window_sb(OssoBrowser *obj,
+		const char *uri, gboolean fullscreen, GError **error) {
+	/* XXX don't ignore fullscreen requests */
 	if (!ctx.continuous_mode)
 		ignore_reconfig_requests();
 	open_address(uri);

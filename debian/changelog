@@ -1,3 +1,9 @@
+browser-switchboard (3.3-2fremantle1) extras-devel; urgency=low
+
+  * Stable release for Fremantle.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sat, 09 Oct 2010 21:48:13 -0700
+
 browser-switchboard (3.3-2) extras-devel; urgency=low
 
   * Cherry-pick cdd1081d... ("Provide open_new_window and load_url methods with

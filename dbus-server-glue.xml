@@ -6,11 +6,21 @@
     <method name="load_url">
       <arg type="s" name="uri" direction="in" />
     </method>
+    <method name="load_url">
+      <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="osso_browser_load_url_sb" />
+      <arg type="s" name="uri" direction="in" />
+      <arg type="b" name="fullscreen" direction="in" />
+    </method>
     <method name="mime_open">
       <arg type="s" name="uri" direction="in" />
     </method>
     <method name="open_new_window">
       <arg type="s" name="uri" direction="in" />
+    </method>
+    <method name="open_new_window">
+      <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="osso_browser_open_new_window_sb" />
+      <arg type="s" name="uri" direction="in" />
+      <arg type="b" name="fullscreen" direction="in" />
     </method>
     <method name="top_application" />
     <method name="switchboard_launch_microb">

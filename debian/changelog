@@ -1,3 +1,11 @@
+browser-switchboard (3.3-2) extras-devel; urgency=low
+
+  * Cherry-pick cdd1081d... ("Provide open_new_window and load_url methods with
+    boolean fullscreen argument"); fix for compatibility with MicroB
+    com.nokia.osso_browser interface.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Sat, 09 Oct 2010 18:38:16 -0700
+
 browser-switchboard (3.3-1fremantle2) extras-devel; urgency=low
 
   * Beta release for Fremantle.

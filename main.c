@@ -22,10 +22,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <signal.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <glib.h>
 #include <dbus/dbus-glib.h>
 
 #include "browser-switchboard.h"
@@ -36,12 +38,60 @@
 
 struct swb_context ctx;
 
+static void read_config(void);
+
+/* Wait for zombies on SIGCHLD */
 static void waitforzombies(int signalnum) {
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		log_msg("Waited for a zombie\n");
+	while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
-static void read_config(int signalnum) {
+/* Handle other signals in event loop by writing signal number to pipe */
+int eventpipe[2];
+static void handle_signal(int signalnum) {
+	write(eventpipe[1], &signalnum, sizeof signalnum);
+}
+
+/* Callbacks for polling the event pipe in the GLib event loop */
+static GPollFD fdevents_pfd;
+/* Called before entering the poll() */
+static gboolean fdevents_prepare(GSource *source, gint *timeout) {
+	/* No timeout for poll() */
+	*timeout = -1;
+	return FALSE;
+}
+/* Check to see whether a handled event has happened */
+static gboolean fdevents_check(GSource *source) {
+	return !!(fdevents_pfd.revents & G_IO_IN);
+}
+/* Read the event from the pipe and handle it */
+static gboolean fdevents_dispatch(GSource *source,
+				  GSourceFunc callback, gpointer user_data) {
+	int eventnum;
+
+	if (read(eventpipe[0], &eventnum, sizeof eventnum) == (sizeof eventnum)) {
+		/* Handle the event passed to us */
+		switch (eventnum) {
+		  /* SIGHUP received -- reread config file */
+		  case SIGHUP:
+			read_config();
+			break;
+		  default:
+			return FALSE;
+		}
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+static GSourceFuncs fdevents_funcs = {
+	.prepare = fdevents_prepare,
+	.check = fdevents_check,
+	.dispatch = fdevents_dispatch,
+	.finalize = NULL,
+};
+
+
+static void read_config(void) {
 	struct swb_config cfg;
 
 	swb_config_init(&cfg);
@@ -86,8 +136,9 @@ int main() {
 	GMainLoop *mainloop;
 	GError *error = NULL;
 	int reqname_result;
+	GSource *fdevents;
 
-	read_config(0);
+	read_config();
 
 	if (ctx.continuous_mode) {
 		/* Install signal handlers */
@@ -102,8 +153,12 @@ int main() {
 			return 1;
 		}
 
-		/* SIGHUP -- reread config file */
-		act.sa_handler = read_config;
+		/* All other signals are handled via the GLib main loop */
+		if (pipe(eventpipe) == -1) {
+			log_perror(errno, "Creating event pipe failed");
+			return 1;
+		}
+		act.sa_handler = handle_signal;
 		if (sigaction(SIGHUP, &act, NULL) == -1) {
 			log_msg("Installing signal handler failed\n");
 			return 1;
@@ -184,6 +239,18 @@ int main() {
 			G_OBJECT(obj_osso_browser_sys_req));
 
 	mainloop = g_main_loop_new(NULL, FALSE);
+
+	/* Hook up event pipe to the main loop */
+	if (ctx.continuous_mode) {
+		fdevents = g_source_new(&fdevents_funcs, sizeof(GSource));
+		g_source_set_priority(fdevents, G_PRIORITY_HIGH);
+		fdevents_pfd.fd = eventpipe[0];
+		fdevents_pfd.events = G_IO_IN;
+		fdevents_pfd.revents = 0;
+		g_source_add_poll(fdevents, &fdevents_pfd);
+		g_source_attach(fdevents, NULL);
+	}
+
 	log_msg("Starting main loop\n");
 	g_main_loop_run(mainloop);
 	log_msg("Main loop completed\n");

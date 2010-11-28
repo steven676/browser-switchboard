@@ -29,12 +29,12 @@
 
 /* The Browser Switchboard config file options */
 struct swb_config_option swb_config_options[] = {
-	{ "continuous_mode", SWB_CONFIG_OPT_INT, SWB_CONFIG_CONTINUOUS_MODE_SET },
-	{ "default_browser", SWB_CONFIG_OPT_STRING, SWB_CONFIG_DEFAULT_BROWSER_SET },
-	{ "other_browser_cmd", SWB_CONFIG_OPT_STRING, SWB_CONFIG_OTHER_BROWSER_CMD_SET },
-	{ "logging", SWB_CONFIG_OPT_STRING, SWB_CONFIG_LOGGING_SET },
-	{ "autostart_microb", SWB_CONFIG_OPT_INT, SWB_CONFIG_AUTOSTART_MICROB_SET },
-	{ NULL, 0, 0 },
+	{ "continuous_mode", SWB_CONFIG_OPT_INT, SWB_CONFIG_CONTINUOUS_MODE_SET, offsetof(struct swb_config, continuous_mode) },
+	{ "default_browser", SWB_CONFIG_OPT_STRING, SWB_CONFIG_DEFAULT_BROWSER_SET, offsetof(struct swb_config, default_browser) },
+	{ "other_browser_cmd", SWB_CONFIG_OPT_STRING, SWB_CONFIG_OTHER_BROWSER_CMD_SET, offsetof(struct swb_config, other_browser_cmd) },
+	{ "logging", SWB_CONFIG_OPT_STRING, SWB_CONFIG_LOGGING_SET, offsetof(struct swb_config, logging) },
+	{ "autostart_microb", SWB_CONFIG_OPT_INT, SWB_CONFIG_AUTOSTART_MICROB_SET, offsetof(struct swb_config, autostart_microb) },
+	{ NULL, 0, 0, 0 },
 };
 
 /* Browser Switchboard configuration defaults */
@@ -48,36 +48,16 @@ static struct swb_config swb_config_defaults = {
 };
 
 
-/* Copy the contents of an swb_config struct
-   The entries[] array means that the standard copy will not work */
-void swb_config_copy(struct swb_config *dst, struct swb_config *src) {
-	if (!dst || !src)
-		return;
-
-	dst->entries[0] = &(dst->continuous_mode);
-	dst->entries[1] = &(dst->default_browser);
-	dst->entries[2] = &(dst->other_browser_cmd);
-	dst->entries[3] = &(dst->logging);
-	dst->entries[4] = &(dst->autostart_microb);
-
-	dst->flags = src->flags;
-
-	dst->continuous_mode = src->continuous_mode;
-	dst->default_browser = src->default_browser;
-	dst->other_browser_cmd = src->other_browser_cmd;
-	dst->logging = src->logging;
-	dst->autostart_microb = src->autostart_microb;
-}
-
 /* Initialize a swb_config struct with configuration defaults */
-void swb_config_init(struct swb_config *cfg) {
-	swb_config_copy(cfg, &swb_config_defaults);
+inline void swb_config_init(struct swb_config *cfg) {
+	*cfg = swb_config_defaults;
 }
 
 /* Free all heap memory used in an swb_config struct
    This MUST NOT be done if any of the strings are being used elsewhere! */
 void swb_config_free(struct swb_config *cfg) {
 	int i;
+	void *entry;
 
 	if (!cfg)
 		return;
@@ -85,11 +65,12 @@ void swb_config_free(struct swb_config *cfg) {
 		return;
 
 	for (i = 0; swb_config_options[i].name; ++i) {
+		entry = (char *)cfg + swb_config_options[i].offset;
 		if (cfg->flags & swb_config_options[i].set_mask) {
 			switch (swb_config_options[i].type) {
 			  case SWB_CONFIG_OPT_STRING:
-				free(*(char **)cfg->entries[i]);
-				*(char **)cfg->entries[i] = NULL;
+				free(*(char **)entry);
+				*(char **)entry = NULL;
 				break;
 			  default:
 				break;
@@ -104,7 +85,7 @@ void swb_config_free(struct swb_config *cfg) {
 static int swb_config_load_option(struct swb_config *cfg,
 				  char *name, char *value) {
 	struct swb_config_option *opt;
-	ptrdiff_t i;
+	void *entry;
 
 	/* Search through list of recognized config options for a match */
 	for (opt = swb_config_options; opt->name; ++opt) {
@@ -112,13 +93,13 @@ static int swb_config_load_option(struct swb_config *cfg,
 			continue;
 
 		if (!(cfg->flags & opt->set_mask)) {
-			i = opt - swb_config_options;
+			entry = (char *)cfg + opt->offset;
 			switch (opt->type) {
 			  case SWB_CONFIG_OPT_STRING:
-				*(char **)cfg->entries[i] = value;
+				*(char **)entry = value;
 				break;
 			  case SWB_CONFIG_OPT_INT:
-				*(int *)cfg->entries[i] = atoi(value);
+				*(int *)entry = atoi(value);
 				free(value);
 				break;
 			}

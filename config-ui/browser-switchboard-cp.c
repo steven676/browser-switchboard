@@ -163,7 +163,7 @@ static void load_config(void) {
 static void save_config(void) {
 	struct swb_config new_cfg;
 
-	swb_config_copy(&new_cfg, &orig_cfg);
+	new_cfg = orig_cfg;
 
 #ifndef FREMANTLE
 	if (get_continuous_mode() != orig_cfg.continuous_mode) {

@@ -21,7 +21,6 @@
  */
 
 #include <stdlib.h>
-#include <stddef.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -41,26 +40,26 @@ extern struct swb_config_option swb_config_options[];
 static void swb_config_output_option(FILE *fp, unsigned int *oldcfg_seen,
 			      struct swb_config *cfg, char *name) {
 	struct swb_config_option *opt;
-	ptrdiff_t i;
+	void *entry;
 
 	for (opt = swb_config_options; opt->name; ++opt) {
 		if (strcmp(opt->name, name))
 			continue;
 
-		i = opt - swb_config_options;
+		entry = (char *)cfg + opt->offset;
 		if (!(*oldcfg_seen & opt->set_mask) &&
 		    (cfg->flags & opt->set_mask)) {
 			switch (opt->type) {
 			  case SWB_CONFIG_OPT_STRING:
 				fprintf(fp, "%s = \"%s\"\n",
 					opt->name,
-					*(char **)cfg->entries[i]);
+					*(char **)entry);
 				*oldcfg_seen |= opt->set_mask;
 				break;
 			  case SWB_CONFIG_OPT_INT:
 				fprintf(fp, "%s = %d\n",
 					opt->name,
-					*(int *)cfg->entries[i]);
+					*(int *)entry);
 				*oldcfg_seen |= opt->set_mask;
 				break;
 			}

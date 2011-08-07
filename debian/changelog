@@ -1,3 +1,10 @@
+browser-switchboard (3.3-2fremantle2) extras-devel; urgency=low
+
+  * Cherry-pick e3ec5ec... ("Also register for path / on D-Bus"); fix
+    for compatibility with MicroB com.nokia.osso_browser interface.
+
+ -- Steven Luo <steven+maemo@steven676.net>  Wed, 17 Aug 2011 16:08:48 -0700
+
 browser-switchboard (3.3-2fremantle1) extras-devel; urgency=low
 
   * Stable release for Fremantle.

@@ -131,8 +131,9 @@ static void read_config(void) {
 }
 
 int main() {
-	OssoBrowser *obj_osso_browser, *obj_osso_browser_req;
-	OssoBrowser *obj_osso_browser_sys, *obj_osso_browser_sys_req;
+	OssoBrowser *obj_osso_browser, *obj_osso_browser_sys;
+        OssoBrowser *obj_osso_browser_req, *obj_osso_browser_sys_req;
+	OssoBrowser *obj_osso_browser_root, *obj_osso_browser_sys_root;
 	GMainLoop *mainloop;
 	GError *error = NULL;
 	int reqname_result;
@@ -224,19 +225,25 @@ int main() {
 	/* Register ourselves to handle the osso_browser D-Bus methods */
 	obj_osso_browser = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	obj_osso_browser_req = g_object_new(OSSO_BROWSER_TYPE, NULL);
+	obj_osso_browser_root = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	obj_osso_browser_sys = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	obj_osso_browser_sys_req = g_object_new(OSSO_BROWSER_TYPE, NULL);
+	obj_osso_browser_sys_root = g_object_new(OSSO_BROWSER_TYPE, NULL);
 	dbus_g_connection_register_g_object(ctx.session_bus,
 			"/com/nokia/osso_browser", G_OBJECT(obj_osso_browser));
 	dbus_g_connection_register_g_object(ctx.session_bus,
 			"/com/nokia/osso_browser/request",
 			G_OBJECT(obj_osso_browser_req));
+	dbus_g_connection_register_g_object(ctx.session_bus,
+			"/", G_OBJECT(obj_osso_browser_root));
 	dbus_g_connection_register_g_object(ctx.system_bus,
 			"/com/nokia/osso_browser",
 			G_OBJECT(obj_osso_browser_sys));
 	dbus_g_connection_register_g_object(ctx.system_bus,
 			"/com/nokia/osso_browser/request",
 			G_OBJECT(obj_osso_browser_sys_req));
+	dbus_g_connection_register_g_object(ctx.system_bus,
+			"/", G_OBJECT(obj_osso_browser_sys_root));
 
 	mainloop = g_main_loop_new(NULL, FALSE);
 
